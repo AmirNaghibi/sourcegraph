@@ -181,7 +181,7 @@ export interface PlatformContext {
      *
      * @example `https://sourcegraph.com`
      */
-    sourcegraphURL: string
+    sourcegraphURL: string // TODO: sync with sourcegraphURLService
 
     /**
      * The client application that is running this extension, either 'sourcegraph' for Sourcegraph

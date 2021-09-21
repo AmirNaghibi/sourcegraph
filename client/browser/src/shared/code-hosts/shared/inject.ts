@@ -2,6 +2,7 @@ import { Observable, Subscription } from 'rxjs'
 import { startWith } from 'rxjs/operators'
 
 import { SourcegraphIntegrationURLs } from '../../platform/context'
+import { SourcegraphURL } from '../../platform/sourcegraphUrl'
 import { MutationRecordLike, observeMutations as defaultObserveMutations } from '../../util/dom'
 
 import { determineCodeHost, CodeHost, injectCodeIntelligenceToCodeHost, ObserveMutations } from './codeHost'
@@ -21,19 +22,26 @@ export async function injectCodeIntelligence(
 ): Promise<Subscription> {
     const subscriptions = new Subscription()
     const codeHost = determineCodeHost(urls.sourcegraphURL)
-    if (codeHost) {
-        console.log('Sourcegraph: Detected code host:', codeHost.type)
-
-        if (onCodeHostFound) {
-            await onCodeHostFound(codeHost)
-        }
-
-        const observeMutations: ObserveMutations = codeHost.observeMutations || defaultObserveMutations
-        const mutations: Observable<MutationRecordLike[]> = observeMutations(document.body, {
-            childList: true,
-            subtree: true,
-        }).pipe(startWith([{ addedNodes: [document.body], removedNodes: [] }]))
-        subscriptions.add(injectCodeIntelligenceToCodeHost(mutations, codeHost, urls, isExtension))
+    if (!codeHost) {
+        return subscriptions
     }
+
+    const { rawRepoName } = codeHost.getContext?.() || {}
+    if (rawRepoName) {
+        await SourcegraphURL.use(rawRepoName)
+    }
+
+    console.log('Sourcegraph: Detected code host:', codeHost.type)
+
+    if (onCodeHostFound) {
+        await onCodeHostFound(codeHost)
+    }
+
+    const observeMutations: ObserveMutations = codeHost.observeMutations || defaultObserveMutations
+    const mutations: Observable<MutationRecordLike[]> = observeMutations(document.body, {
+        childList: true,
+        subtree: true,
+    }).pipe(startWith([{ addedNodes: [document.body], removedNodes: [] }]))
+    subscriptions.add(injectCodeIntelligenceToCodeHost(mutations, codeHost, urls, isExtension))
     return subscriptions
 }

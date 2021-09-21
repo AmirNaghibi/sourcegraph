@@ -88,6 +88,7 @@ import { toTextDocumentPositionParameters } from '../../backend/extension-api-co
 import { CodeViewToolbar, CodeViewToolbarClassProps } from '../../components/CodeViewToolbar'
 import { isExtension, isInPage } from '../../context'
 import { SourcegraphIntegrationURLs, BrowserPlatformContext } from '../../platform/context'
+import { SourcegraphURL } from '../../platform/sourcegraphUrl'
 import { resolveRevision, retryWhenCloneInProgressError } from '../../repo/backend'
 import { EventLogger, ConditionalTelemetryService } from '../../tracking/eventLogger'
 import { DEFAULT_SOURCEGRAPH_URL, getPlatformName, observeSourcegraphURL } from '../../util/context'
@@ -763,6 +764,7 @@ export function handleCodeHost({
             startWith(null),
             switchMap(() => {
                 const { rawRepoName, revision } = getContext()
+                SourcegraphURL.cache(rawRepoName)
                 return resolveRevision({ repoName: rawRepoName, revision, requestGraphQL }).pipe(
                     retryWhenCloneInProgressError(),
                     mapTo(true),
@@ -865,6 +867,7 @@ export function handleCodeHost({
         delayUntilIntersecting({ rootMargin: '4000px 0px' }),
         mergeMap(codeViewEvent =>
             asObservable(() =>
+                // TODO: potential determine URL places
                 codeViewEvent.resolveFileInfo(codeViewEvent.element, platformContext.requestGraphQL)
             ).pipe(
                 mergeMap(diffOrBlobInfo =>

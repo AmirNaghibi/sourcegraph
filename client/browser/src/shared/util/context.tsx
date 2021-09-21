@@ -7,8 +7,16 @@ import { observeStorageKey } from '../../browser-extension/web-extension-api/sto
 
 export const DEFAULT_SOURCEGRAPH_URL = 'https://sourcegraph.com'
 
-export function observeSourcegraphURL(isExtension: boolean): Observable<string> {
+export function observeSourcegraphURL(isExtension: boolean, rawRepoName?: string): Observable<string> {
     if (isExtension) {
+        /**
+         * Steps: (need repoName)
+            0. if no rawRepoName use just first in the list?
+            1. search for repo to SG URL association
+            2. if not check using SG URLs list and return first working for the given repoName
+                - Save association
+            3. if not just default last one, I guess?
+         */
         return observeStorageKey('sync', 'sourcegraphURL').pipe(
             map(sourcegraphURL => sourcegraphURL || DEFAULT_SOURCEGRAPH_URL)
         )

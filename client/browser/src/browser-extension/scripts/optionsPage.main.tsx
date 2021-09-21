@@ -15,6 +15,7 @@ import { useObservable } from '@sourcegraph/shared/src/util/useObservable'
 
 import { fetchSite } from '../../shared/backend/server'
 import { isExtension } from '../../shared/context'
+import { SourcegraphURL } from '../../shared/platform/sourcegraphUrl'
 import { initSentry } from '../../shared/sentry'
 import { observeSourcegraphURL, getExtensionVersion, DEFAULT_SOURCEGRAPH_URL } from '../../shared/util/context'
 import { featureFlags } from '../../shared/util/featureFlags'
@@ -137,7 +138,7 @@ function handleChangeOptionFlag(key: string, value: boolean): void {
 }
 
 function handleChangeSourcegraphUrl(url: string): void {
-    storage.sync.set({ sourcegraphURL: url }).catch(console.error)
+    SourcegraphURL.update([{ url }]).catch(console.error)
 }
 
 function buildRequestPermissionsHandler({ protocol, host }: TabStatus) {
