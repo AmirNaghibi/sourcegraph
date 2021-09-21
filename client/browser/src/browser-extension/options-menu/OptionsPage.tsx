@@ -268,6 +268,7 @@ const SourcegraphURLInput: React.FC<SourcegraphURLInputProps> = ({ label, onChan
 
     return (
         <div className="mb-3">
+            <Toggle value={true} title={label} />
             <label htmlFor="sourcegraph-url">{label}</label>
             <LoaderInput loading={urlState.kind === 'LOADING'} className={classNames(deriveInputClassName(urlState))}>
                 <input

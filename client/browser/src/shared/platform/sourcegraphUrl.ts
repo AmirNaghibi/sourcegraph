@@ -47,6 +47,12 @@ export const SourcegraphURL = (() => {
         .subscribe(URLSubject)
 
     const determineSgURL = async (rawRepoName: string): Promise<string | undefined> => {
+        const { repoToSgURL = {} } = await storage.sync.get('repoToSgURL')
+
+        if (repoToSgURL[rawRepoName]) {
+            return repoToSgURL[rawRepoName]
+        }
+
         const sgURLs = (await storage.sync.get('sgURLs'))?.sgURLs || [{ url: DEFAULT_SOURCEGRAPH_URL }]
         const URLs = sgURLs.filter(({ disabled }) => !disabled).map(({ url }) => url)
 
@@ -56,7 +62,13 @@ export const SourcegraphURL = (() => {
             .pipe(
                 first(item => item.isCloned),
                 map(({ sgURL }) => sgURL),
-                defaultIfEmpty<string | undefined>(undefined)
+                defaultIfEmpty<string | undefined>(undefined),
+                tap(sgURL => {
+                    if (sgURL) {
+                        repoToSgURL[rawRepoName] = sgURL
+                        storage.sync.set({ repoToSgURL }).catch(console.error)
+                    }
+                })
             )
             .toPromise()
     }
@@ -74,23 +86,18 @@ export const SourcegraphURL = (() => {
         },
         use: async function use(rawRepoName: string): Promise<void> {
             // TODO: check if URL was disabled, then invalidate cache or don't use it at all
-            const { repoToSgURL = {} } = await storage.sync.get('repoToSgURL')
-            console.log('SourcegraphURL.use:', repoToSgURL)
-
-            let sgURL = repoToSgURL[rawRepoName]
-            if (sgURL) {
-                if (sgURL === URLSubject.value) {
-                    return
-                }
-                return URLSubject.next(sgURL)
+            const sgURL = await determineSgURL(rawRepoName)
+            console.log('SourcegraphURL.use:', rawRepoName)
+            if (!sgURL) {
+                console.warn(`Couldn't detect sourcegraphURL for the ${rawRepoName}`)
+                return
             }
 
-            sgURL = await determineSgURL(rawRepoName)
-            if (sgURL) {
-                URLSubject.next(sgURL)
-                repoToSgURL[rawRepoName] = sgURL
-                storage.sync.set({ repoToSgURL }).catch(console.error)
+            if (sgURL === URLSubject.value) {
+                return
             }
+
+            URLSubject.next(sgURL)
         },
         update: function update(sgURLs: SyncStorageItems['sgURLs']): Promise<void> {
             console.log('SourcegraphURL.update:', sgURLs)
