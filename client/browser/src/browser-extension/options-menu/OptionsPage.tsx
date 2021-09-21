@@ -41,6 +41,10 @@ export interface OptionsPageProps {
 // "Error code" constants for Sourcegraph URL validation
 export const URL_FETCH_ERROR = 'URL_FETCH_ERROR'
 export const URL_AUTH_ERROR = 'URL_AUTH_ERROR'
+const LINK_PROPS: Pick<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'rel' | 'target'> = {
+    target: '_blank',
+    rel: 'noopener noreferrer',
+}
 
 export const OptionsPage: React.FunctionComponent<OptionsPageProps> = ({
     version,
@@ -59,41 +63,11 @@ export const OptionsPage: React.FunctionComponent<OptionsPageProps> = ({
     currentHost,
 }) => {
     const [showAdvancedSettings, setShowAdvancedSettings] = useState(false)
-    const urlInputReference = useRef<HTMLInputElement | null>(null)
-    const [urlState, nextUrlFieldChange, nextUrlInputElement] = useInputValidation(
-        useMemo(
-            () => ({
-                initialValue: sourcegraphUrl,
-                synchronousValidators: [],
-                asynchronousValidators: [validateSourcegraphUrl],
-            }),
-            [sourcegraphUrl, validateSourcegraphUrl]
-        )
-    )
-
-    const urlInputElements = useCallback(
-        (urlInputElement: HTMLInputElement | null) => {
-            urlInputReference.current = urlInputElement
-            nextUrlInputElement(urlInputElement)
-        },
-        [nextUrlInputElement]
-    )
 
     const toggleAdvancedSettings = useCallback(
         () => setShowAdvancedSettings(showAdvancedSettings => !showAdvancedSettings),
         []
     )
-
-    const linkProps: Pick<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'rel' | 'target'> = {
-        target: '_blank',
-        rel: 'noopener noreferrer',
-    }
-
-    useEffect(() => {
-        if (urlState.kind === 'VALID') {
-            onChangeSourcegraphUrl(urlState.value)
-        }
-    }, [onChangeSourcegraphUrl, urlState])
 
     return (
         <div className={classNames('options-page', isFullPage && 'options-page--full shadow')}>
@@ -115,58 +89,25 @@ export const OptionsPage: React.FunctionComponent<OptionsPageProps> = ({
             <section className="options-page__section border-0">
                 {/* eslint-disable-next-line react/forbid-elements */}
                 <form onSubmit={preventDefault} noValidate={true}>
-                    <label htmlFor="sourcegraph-url">Sourcegraph URL</label>
-                    <LoaderInput
-                        loading={urlState.kind === 'LOADING'}
-                        className={classNames(deriveInputClassName(urlState))}
-                    >
-                        <input
-                            className={classNames(
-                                'form-control',
-                                deriveInputClassName(urlState),
-                                'test-sourcegraph-url'
-                            )}
-                            id="sourcegraph-url"
-                            type="url"
-                            pattern="^https://.*"
-                            value={urlState.value}
-                            onChange={nextUrlFieldChange}
-                            ref={urlInputElements}
-                            spellCheck={false}
-                            required={true}
-                        />
-                    </LoaderInput>
-                    {urlState.kind === 'LOADING' ? (
-                        <small className="text-muted d-block mt-1">Checking...</small>
-                    ) : urlState.kind === 'INVALID' ? (
-                        <small className="invalid-feedback">
-                            {urlState.reason === URL_FETCH_ERROR ? (
-                                'Incorrect Sourcegraph instance address'
-                            ) : urlState.reason === URL_AUTH_ERROR ? (
-                                <>
-                                    Authentication to Sourcegraph failed.{' '}
-                                    <a href={urlState.value} {...linkProps}>
-                                        Sign in to your instance
-                                    </a>{' '}
-                                    to continue
-                                </>
-                            ) : urlInputReference.current?.validity.typeMismatch ? (
-                                'Please enter a valid URL, including the protocol prefix (e.g. https://sourcegraph.example.com).'
-                            ) : urlInputReference.current?.validity.patternMismatch ? (
-                                'The browser extension can only work over HTTPS in modern browsers.'
-                            ) : (
-                                urlState.reason
-                            )}
-                        </small>
-                    ) : (
-                        <small className="valid-feedback test-valid-sourcegraph-url-feedback">Looks good!</small>
-                    )}
+                    {/* TODO: implement onChange/onDisable of multiple URLs */}
+                    <SourcegraphURLInput
+                        label="Sourcegraph URL"
+                        initialValue={sourcegraphUrl}
+                        onChange={onChangeSourcegraphUrl}
+                        validate={validateSourcegraphUrl}
+                    />
+                    <SourcegraphURLInput
+                        label="Self hosted Sourcegraph instance"
+                        initialValue={sourcegraphUrl}
+                        onChange={onChangeSourcegraphUrl}
+                        validate={validateSourcegraphUrl}
+                    />
                 </form>
                 <p className="mt-3 mb-1">
                     <small>Enter the URL of your Sourcegraph instance to use the extension on private code.</small>
                 </p>
 
-                <a href="https://docs.sourcegraph.com/integration/browser_extension#privacy" {...linkProps}>
+                <a href="https://docs.sourcegraph.com/integration/browser_extension#privacy" {...LINK_PROPS}>
                     <small>How do we keep your code private?</small>
                 </a>
             </section>
@@ -190,13 +131,13 @@ export const OptionsPage: React.FunctionComponent<OptionsPageProps> = ({
             </section>
             <section className="d-flex">
                 <div className="options-page__split-section-part">
-                    <a href="https://sourcegraph.com/search" {...linkProps}>
+                    <a href="https://sourcegraph.com/search" {...LINK_PROPS}>
                         <EarthIcon className="icon-inline mr-2" />
                         Sourcegraph Cloud
                     </a>
                 </div>
                 <div className="options-page__split-section-part">
-                    <a href="https://docs.sourcegraph.com" {...linkProps}>
+                    <a href="https://docs.sourcegraph.com" {...LINK_PROPS}>
                         <BookOpenPageVariantIcon className="icon-inline mr-2" />
                         Documentation
                     </a>
@@ -278,7 +219,7 @@ const CodeHostsSection: React.FunctionComponent<{ currentHost?: string }> = ({ c
     </section>
 )
 
-const SourcegraphCloudAlert: React.FunctionComponent = () => (
+const SourcegraphCloudAlert: React.FC = () => (
     <section className="options-page__section bg-2">
         <h4>
             <CheckCircleOutlineIcon className="icon-inline mr-2" />
@@ -290,4 +231,81 @@ const SourcegraphCloudAlert: React.FunctionComponent = () => (
 
 function preventDefault(event: React.FormEvent<HTMLFormElement>): void {
     event.preventDefault()
+}
+
+interface SourcegraphURLInputProps {
+    label: string
+    onChange: OptionsPageProps['onChangeSourcegraphUrl']
+    initialValue: OptionsPageProps['sourcegraphUrl']
+    validate: OptionsPageProps['validateSourcegraphUrl']
+}
+const SourcegraphURLInput: React.FC<SourcegraphURLInputProps> = ({ label, onChange, initialValue, validate }) => {
+    const urlInputReference = useRef<HTMLInputElement | null>(null)
+    const [urlState, nextUrlFieldChange, nextUrlInputElement] = useInputValidation(
+        useMemo(
+            () => ({
+                initialValue,
+                synchronousValidators: [],
+                asynchronousValidators: [validate],
+            }),
+            [initialValue, validate]
+        )
+    )
+
+    const urlInputElements = useCallback(
+        (urlInputElement: HTMLInputElement | null) => {
+            urlInputReference.current = urlInputElement
+            nextUrlInputElement(urlInputElement)
+        },
+        [nextUrlInputElement]
+    )
+
+    useEffect(() => {
+        if (urlState.kind === 'VALID') {
+            onChange(urlState.value)
+        }
+    }, [onChange, urlState])
+
+    return (
+        <div className="mb-3">
+            <label htmlFor="sourcegraph-url">{label}</label>
+            <LoaderInput loading={urlState.kind === 'LOADING'} className={classNames(deriveInputClassName(urlState))}>
+                <input
+                    className={classNames('form-control', deriveInputClassName(urlState), 'test-sourcegraph-url')}
+                    id="sourcegraph-url"
+                    type="url"
+                    pattern="^https://.*"
+                    value={urlState.value}
+                    onChange={nextUrlFieldChange}
+                    ref={urlInputElements}
+                    spellCheck={false}
+                    required={true}
+                />
+            </LoaderInput>
+            {urlState.kind === 'LOADING' && <small className="text-muted d-block mt-1">Checking...</small>}
+            {urlState.kind === 'INVALID' && (
+                <small className="invalid-feedback">
+                    {urlState.reason === URL_FETCH_ERROR && 'Incorrect Sourcegraph instance address'}
+                    {urlState.reason === URL_AUTH_ERROR ? (
+                        <>
+                            Authentication to Sourcegraph failed.{' '}
+                            <a href={urlState.value} {...LINK_PROPS}>
+                                Sign in to your instance
+                            </a>{' '}
+                            to continue
+                        </>
+                    ) : urlInputReference.current?.validity.typeMismatch ? (
+                        'Please enter a valid URL, including the protocol prefix (e.g. https://sourcegraph.example.com).'
+                    ) : urlInputReference.current?.validity.patternMismatch ? (
+                        'The browser extension can only work over HTTPS in modern browsers.'
+                    ) : (
+                        urlState.reason
+                    )}
+                </small>
+            )}
+            {urlState.kind === 'VALID' && (
+                <small className="valid-feedback test-valid-sourcegraph-url-feedback">Looks good!</small>
+            )}
+        </div>
+    )
 }
