@@ -1,8 +1,9 @@
 import { Observable, of, from, merge, BehaviorSubject } from 'rxjs'
-import { map, first, defaultIfEmpty, distinctUntilChanged, startWith, tap } from 'rxjs/operators'
+import { map, first, defaultIfEmpty, distinctUntilChanged, startWith, tap, filter } from 'rxjs/operators'
 
 import { dataOrThrowErrors, gql } from '@sourcegraph/shared/src/graphql/graphql'
 import * as GQL from '@sourcegraph/shared/src/graphql/schema'
+import { isDefined } from '@sourcegraph/shared/src/util/types'
 
 import { background } from '../../browser-extension/web-extension-api/runtime'
 import { observeStorageKey, storage } from '../../browser-extension/web-extension-api/storage'
@@ -33,30 +34,36 @@ const checkRepoCloned = (sourcegraphURL: string, repoName: string): Observable<b
     )
 
 export const SourcegraphURL = (() => {
-    const observeSgURLs = (): Observable<SyncStorageItems['sgURLs']> =>
-        observeStorageKey('sync', 'sgURLs').pipe(map(URLs => URLs || []))
+    const DEFAULT_URLS = [{ url: DEFAULT_SOURCEGRAPH_URL }]
+    // todo change name
+    const observeSgURLs = observeStorageKey('sync', 'sgURLs')
 
-    const LastURLSubject = new BehaviorSubject<string>(DEFAULT_SOURCEGRAPH_URL)
+    const LastURLSubject = new BehaviorSubject<string | undefined>(undefined)
     const SgURLs = new BehaviorSubject<SyncStorageItems['sgURLs']>([])
 
-    observeSgURLs()
+    // eslint-disable-next-line rxjs/no-ignored-subscription
+    observeSgURLs.pipe(map(URLs => URLs ?? DEFAULT_URLS)).subscribe(SgURLs)
+
+    observeSgURLs
         .pipe(
+            filter(isDefined),
             map(URLs => (URLs.length > 0 ? URLs[0].url : DEFAULT_SOURCEGRAPH_URL)),
-            startWith(DEFAULT_SOURCEGRAPH_URL),
             distinctUntilChanged()
         )
         // eslint-disable-next-line rxjs/no-ignored-subscription
         .subscribe(LastURLSubject)
 
+    const isValid = (url: string): boolean => !!SgURLs?.value.find(item => item.url === url && !item.disabled)
+
     const determineSgURL = async (rawRepoName: string): Promise<string | undefined> => {
         const { repoToSgURL = {} } = await storage.sync.get('repoToSgURL')
 
-        if (repoToSgURL[rawRepoName]) {
-            return repoToSgURL[rawRepoName]
+        const cachedURLForRepoName = repoToSgURL[rawRepoName]
+        if (cachedURLForRepoName && isValid(cachedURLForRepoName)) {
+            return cachedURLForRepoName
         }
 
-        const sgURLs = (await storage.sync.get('sgURLs'))?.sgURLs || [{ url: DEFAULT_SOURCEGRAPH_URL }]
-        const URLs = sgURLs.filter(({ disabled }) => !disabled).map(({ url }) => url)
+        const URLs = SgURLs?.value.filter(({ disabled }) => !disabled).map(({ url }) => url)
 
         return merge(
             ...URLs.map(sgURL => checkRepoCloned(sgURL, rawRepoName).pipe(map(isCloned => ({ isCloned, sgURL }))))
@@ -84,9 +91,11 @@ export const SourcegraphURL = (() => {
             }
 
             console.log('SourcegraphURL.observe:', isExtension)
-            return LastURLSubject.asObservable().pipe(tap(sourcegraphURL => console.log({ sourcegraphURL })))
+            return LastURLSubject.asObservable().pipe(
+                filter(isDefined),
+                tap(sourcegraphURL => console.log({ sourcegraphURL }))
+            )
         },
-        cloudURL: '',
         use: async function use(rawRepoName: string): Promise<void> {
             // TODO: check if URL was disabled, then invalidate cache or don't use it at all
             const sgURL = await determineSgURL(rawRepoName)

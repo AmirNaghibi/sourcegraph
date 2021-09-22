@@ -1,7 +1,7 @@
 import '../../shared/polyfills'
 
-import { fromEvent, Subscription } from 'rxjs'
-import { first, filter, switchMap, tap } from 'rxjs/operators'
+import { from, fromEvent, Subscription } from 'rxjs'
+import { first, filter, switchMap, tap, finalize, mergeMap } from 'rxjs/operators'
 
 import { setLinkComponent, AnchorLink } from '@sourcegraph/shared/src/components/Link'
 
@@ -61,6 +61,7 @@ async function main(): Promise<void> {
         .pipe(first())
         .toPromise()
 
+    let lastSubscription: Subscription | undefined
     const subscription = SourcegraphURL.observe()
         .pipe(
             filter(sourcegraphURL => {
@@ -68,9 +69,11 @@ async function main(): Promise<void> {
                 if (isSourcegraphServer) {
                     signalBrowserExtensionInstalled()
                 }
+
                 return !isSourcegraphServer
             }),
-            switchMap(sourcegraphURL =>
+            // TODO: explain why we need mergeMap instead of switchMap
+            mergeMap(sourcegraphURL =>
                 injectCodeIntelligence(
                     { sourcegraphURL, assetsURL: getAssetsURL(DEFAULT_SOURCEGRAPH_URL) },
                     IS_EXTENSION,
@@ -105,7 +108,12 @@ async function main(): Promise<void> {
                 )
             )
         )
-        .subscribe(subscriptions => subscriptions)
+        .subscribe(subscription => {
+            if (lastSubscription) {
+                lastSubscription.unsubscribe()
+            }
+            lastSubscription = subscription
+        })
 
     subscriptions.add(subscription)
 
