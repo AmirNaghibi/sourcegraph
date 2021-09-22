@@ -72,6 +72,7 @@ export class EventLogger implements TelemetryService {
     constructor(isExtension: boolean, private requestGraphQL: PlatformContext['requestGraphQL']) {
         const replaySubject = new ReplaySubject<string>(1)
         this.sourcegraphURLs = replaySubject.asObservable()
+        // NOTE: should we send logs when using particular sgURL?
         // TODO pass this Observable as a parameter
         // eslint-disable-next-line rxjs/no-ignored-subscription
         observeSourcegraphURL(isExtension).subscribe(replaySubject)

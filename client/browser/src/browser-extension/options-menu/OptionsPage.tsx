@@ -4,6 +4,7 @@ import CheckCircleOutlineIcon from 'mdi-react/CheckCircleOutlineIcon'
 import EarthIcon from 'mdi-react/EarthIcon'
 import LockIcon from 'mdi-react/LockIcon'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useToggle } from 'react-use'
 import { Observable } from 'rxjs'
 
 import { LoaderInput } from '@sourcegraph/branded/src/components/LoaderInput'
@@ -21,7 +22,7 @@ export interface OptionsPageProps {
     // Sourcegraph URL
     sourcegraphUrl: string
     validateSourcegraphUrl: (url: string) => Observable<string | undefined>
-    onChangeSourcegraphUrl: (url: string) => void
+    onChangeSourcegraphUrl: (url: string, enabled: boolean) => void
 
     // Option flags
     optionFlags: { key: string; label: string; value: boolean }[]
@@ -96,12 +97,12 @@ export const OptionsPage: React.FunctionComponent<OptionsPageProps> = ({
                         onChange={onChangeSourcegraphUrl}
                         validate={validateSourcegraphUrl}
                     />
-                    <SourcegraphURLInput
+                    {/* <SourcegraphURLInput
                         label="Self hosted Sourcegraph instance"
                         initialValue={sourcegraphUrl}
                         onChange={onChangeSourcegraphUrl}
                         validate={validateSourcegraphUrl}
-                    />
+                    /> */}
                 </form>
                 <p className="mt-3 mb-1">
                     <small>Enter the URL of your Sourcegraph instance to use the extension on private code.</small>
@@ -233,13 +234,46 @@ function preventDefault(event: React.FormEvent<HTMLFormElement>): void {
     event.preventDefault()
 }
 
-interface SourcegraphURLInputProps {
+interface SourcegraphURLInputProps extends Omit<URLInputProps, 'onChange'> {
     label: string
     onChange: OptionsPageProps['onChangeSourcegraphUrl']
-    initialValue: OptionsPageProps['sourcegraphUrl']
+}
+const SourcegraphURLInput: React.FC<SourcegraphURLInputProps> = ({ label, initialValue, onChange, validate }) => {
+    const [enabled, onToggleEnabled] = useToggle(true)
+    const [value, setValue] = useState<string | null>(null)
+
+    useEffect(() => {
+        if (!value) {
+            return
+        }
+        onChange(value, enabled)
+    }, [onChange, value, enabled])
+
+    return (
+        <div className="mb-3">
+            <Toggle value={enabled} onToggle={onToggleEnabled} title={label} className="mr-2" />
+            <label htmlFor="sourcegraph-url">{label}</label>
+            {enabled && (
+                <URLInput
+                    initialValue={initialValue}
+                    onChange={url => {
+                        console.log('onChange', url)
+                        setValue(url)
+                    }}
+                    validate={validate}
+                />
+            )}
+        </div>
+    )
+}
+
+interface URLInputProps {
+    onChange: (value: string) => void
+    initialValue: string
     validate: OptionsPageProps['validateSourcegraphUrl']
 }
-const SourcegraphURLInput: React.FC<SourcegraphURLInputProps> = ({ label, onChange, initialValue, validate }) => {
+
+const URLInput: React.FC<URLInputProps> = ({ onChange, initialValue, validate }) => {
     const urlInputReference = useRef<HTMLInputElement | null>(null)
     const [urlState, nextUrlFieldChange, nextUrlInputElement] = useInputValidation(
         useMemo(
@@ -267,9 +301,7 @@ const SourcegraphURLInput: React.FC<SourcegraphURLInputProps> = ({ label, onChan
     }, [onChange, urlState])
 
     return (
-        <div className="mb-3">
-            <Toggle value={true} title={label} />
-            <label htmlFor="sourcegraph-url">{label}</label>
+        <>
             <LoaderInput loading={urlState.kind === 'LOADING'} className={classNames(deriveInputClassName(urlState))}>
                 <input
                     className={classNames('form-control', deriveInputClassName(urlState), 'test-sourcegraph-url')}
@@ -307,6 +339,6 @@ const SourcegraphURLInput: React.FC<SourcegraphURLInputProps> = ({ label, onChan
             {urlState.kind === 'VALID' && (
                 <small className="valid-feedback test-valid-sourcegraph-url-feedback">Looks good!</small>
             )}
-        </div>
+        </>
     )
 }
