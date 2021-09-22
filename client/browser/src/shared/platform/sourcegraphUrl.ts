@@ -97,7 +97,6 @@ export const SourcegraphURL = (() => {
             )
         },
         use: async function use(rawRepoName: string): Promise<void> {
-            // TODO: check if URL was disabled, then invalidate cache or don't use it at all
             const sgURL = await determineSgURL(rawRepoName)
             console.log('SourcegraphURL.use:', rawRepoName)
             if (!sgURL) {

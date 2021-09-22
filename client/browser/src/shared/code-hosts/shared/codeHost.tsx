@@ -867,7 +867,6 @@ export function handleCodeHost({
         delayUntilIntersecting({ rootMargin: '4000px 0px' }),
         mergeMap(codeViewEvent =>
             asObservable(() =>
-                // TODO: potential determine URL places
                 codeViewEvent.resolveFileInfo(codeViewEvent.element, platformContext.requestGraphQL)
             ).pipe(
                 mergeMap(diffOrBlobInfo =>

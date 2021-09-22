@@ -84,7 +84,6 @@ export function createPlatformContext(
                 if (isHTTPAuthError(error)) {
                     // User is not signed in
                     console.warn(
-                        // TODO: how to properly show this error?
                         `Could not fetch Sourcegraph settings from ${sourcegraphURL} because user is not signed into Sourcegraph`
                     )
                     updatedViewerSettings.next({ final: '{}', subjects: [] })
@@ -146,7 +145,7 @@ export function createPlatformContext(
             // Otherwise fall back to linking to Sourcegraph (with an absolute URL).
             return `${sourcegraphURL}${toPrettyBlobURL(target)}`
         },
-        sourcegraphURL, // TODO: getter
+        sourcegraphURL,
         clientApplication: 'other',
         sideloadedExtensionURL: isInPage
             ? new LocalStorageSubject<string | null>('sideloadedExtensionURL', null)
