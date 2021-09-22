@@ -92,17 +92,17 @@ export const OptionsPage: React.FunctionComponent<OptionsPageProps> = ({
                 <form onSubmit={preventDefault} noValidate={true}>
                     {/* TODO: implement onChange/onDisable of multiple URLs */}
                     <SourcegraphURLInput
-                        label="Sourcegraph URL"
+                        label="Sourcegraph Cloud"
                         initialValue={sourcegraphUrl}
                         onChange={onChangeSourcegraphUrl}
                         validate={validateSourcegraphUrl}
                     />
-                    {/* <SourcegraphURLInput
+                    <SourcegraphURLInput
                         label="Self hosted Sourcegraph instance"
                         initialValue={sourcegraphUrl}
                         onChange={onChangeSourcegraphUrl}
                         validate={validateSourcegraphUrl}
-                    /> */}
+                    />
                 </form>
                 <p className="mt-3 mb-1">
                     <small>Enter the URL of your Sourcegraph instance to use the extension on private code.</small>

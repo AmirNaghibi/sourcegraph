@@ -108,7 +108,7 @@ const validateSourcegraphUrl = (url: string): Observable<string | undefined> =>
     )
 
 const observeOptionFlagsWithValues = (): Observable<OptionFlagWithValue[]> => {
-    const overrideSendTelemetry: Observable<boolean> = observeSourcegraphURL(IS_EXTENSION).pipe(
+    const overrideSendTelemetry: Observable<boolean> = SourcegraphURL.observe().pipe(
         map(sourcegraphUrl => shouldOverrideSendTelemetry(isFirefox(), isExtension, sourcegraphUrl))
     )
 

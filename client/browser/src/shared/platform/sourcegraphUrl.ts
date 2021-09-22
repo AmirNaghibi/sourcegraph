@@ -19,6 +19,7 @@ const QUERY = gql`
     }
 `
 
+// TODO: show notification if not signed in
 const checkRepoCloned = (sourcegraphURL: string, repoName: string): Observable<boolean> =>
     from(
         background.requestGraphQL<GQL.IQuery>({
@@ -35,7 +36,8 @@ export const SourcegraphURL = (() => {
     const observeSgURLs = (): Observable<SyncStorageItems['sgURLs']> =>
         observeStorageKey('sync', 'sgURLs').pipe(map(URLs => URLs || []))
 
-    const URLSubject = new BehaviorSubject<string>(DEFAULT_SOURCEGRAPH_URL)
+    const LastURLSubject = new BehaviorSubject<string>(DEFAULT_SOURCEGRAPH_URL)
+    const SgURLs = new BehaviorSubject<SyncStorageItems['sgURLs']>([])
 
     observeSgURLs()
         .pipe(
@@ -44,7 +46,7 @@ export const SourcegraphURL = (() => {
             distinctUntilChanged()
         )
         // eslint-disable-next-line rxjs/no-ignored-subscription
-        .subscribe(URLSubject)
+        .subscribe(LastURLSubject)
 
     const determineSgURL = async (rawRepoName: string): Promise<string | undefined> => {
         const { repoToSgURL = {} } = await storage.sync.get('repoToSgURL')
@@ -82,8 +84,9 @@ export const SourcegraphURL = (() => {
             }
 
             console.log('SourcegraphURL.observe:', isExtension)
-            return URLSubject.asObservable().pipe(tap(sourcegraphURL => console.log({ sourcegraphURL })))
+            return LastURLSubject.asObservable().pipe(tap(sourcegraphURL => console.log({ sourcegraphURL })))
         },
+        cloudURL: '',
         use: async function use(rawRepoName: string): Promise<void> {
             // TODO: check if URL was disabled, then invalidate cache or don't use it at all
             const sgURL = await determineSgURL(rawRepoName)
@@ -93,11 +96,11 @@ export const SourcegraphURL = (() => {
                 return
             }
 
-            if (sgURL === URLSubject.value) {
+            if (sgURL === LastURLSubject.value) {
                 return
             }
 
-            URLSubject.next(sgURL)
+            LastURLSubject.next(sgURL)
         },
         update: function update(sgURLs: SyncStorageItems['sgURLs']): Promise<void> {
             console.log('SourcegraphURL.update:', sgURLs)
