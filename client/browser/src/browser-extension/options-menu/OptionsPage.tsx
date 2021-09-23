@@ -12,6 +12,7 @@ import { SourcegraphLogo } from '@sourcegraph/branded/src/components/Sourcegraph
 import { Toggle } from '@sourcegraph/branded/src/components/Toggle'
 import { useInputValidation, deriveInputClassName } from '@sourcegraph/shared/src/util/useInputValidation'
 
+import { DEFAULT_SOURCEGRAPH_URL } from '../../shared/util/context'
 import { knownCodeHosts } from '../knownCodeHosts'
 
 import { OptionsPageAdvancedSettings } from './OptionsPageAdvancedSettings'
@@ -93,20 +94,25 @@ export const OptionsPage: React.FunctionComponent<OptionsPageProps> = ({
                     {/* TODO: implement onChange/onDisable of multiple URLs */}
                     <SourcegraphURLInput
                         label="Sourcegraph Cloud"
+                        description={
+                            <>
+                                Enable to get code intel for millions of public repositories and your synced private
+                                repositories on <a href={DEFAULT_SOURCEGRAPH_URL}>sourcegraph.com</a>
+                            </>
+                        }
+                        editable={false}
                         initialValue={sourcegraphUrl}
                         onChange={onChangeSourcegraphUrl}
                         validate={validateSourcegraphUrl}
                     />
                     <SourcegraphURLInput
                         label="Self hosted Sourcegraph instance"
+                        description="Enter the URL of your Sourcegraph instance to use the extension on private code."
                         initialValue={sourcegraphUrl}
                         onChange={onChangeSourcegraphUrl}
                         validate={validateSourcegraphUrl}
                     />
                 </form>
-                <p className="mt-3 mb-1">
-                    <small>Enter the URL of your Sourcegraph instance to use the extension on private code.</small>
-                </p>
 
                 <a href="https://docs.sourcegraph.com/integration/browser_extension#privacy" {...LINK_PROPS}>
                     <small>How do we keep your code private?</small>
@@ -234,11 +240,29 @@ function preventDefault(event: React.FormEvent<HTMLFormElement>): void {
     event.preventDefault()
 }
 
+const CheckIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" className={className} height="16" viewBox="0 0 16 16">
+        <path
+            fill="#37b24d"
+            d="M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z"
+        />
+    </svg>
+)
+
 interface SourcegraphURLInputProps extends Omit<URLInputProps, 'onChange'> {
     label: string
+    description: JSX.Element | string
     onChange: OptionsPageProps['onChangeSourcegraphUrl']
+    editable?: boolean
 }
-const SourcegraphURLInput: React.FC<SourcegraphURLInputProps> = ({ label, initialValue, onChange, validate }) => {
+const SourcegraphURLInput: React.FC<SourcegraphURLInputProps> = ({
+    label,
+    description,
+    editable = true,
+    initialValue,
+    onChange,
+    validate,
+}) => {
     const [enabled, onToggleEnabled] = useToggle(true)
     const [value, setValue] = useState<string | null>(null)
 
@@ -250,10 +274,10 @@ const SourcegraphURLInput: React.FC<SourcegraphURLInputProps> = ({ label, initia
     }, [onChange, value, enabled])
 
     return (
-        <div className="mb-3">
+        <div className="mb-3 position-relative">
             <Toggle value={enabled} onToggle={onToggleEnabled} title={label} className="mr-2" />
             <label htmlFor="sourcegraph-url">{label}</label>
-            {enabled && (
+            {enabled && editable && (
                 <URLInput
                     initialValue={initialValue}
                     onChange={url => {
@@ -262,6 +286,12 @@ const SourcegraphURLInput: React.FC<SourcegraphURLInputProps> = ({ label, initia
                     }}
                     validate={validate}
                 />
+            )}
+            {!editable && enabled && <CheckIcon className="options-page__check-icon position-absolute" />}
+            {(!enabled || !editable) && (
+                <p>
+                    <small>{description}</small>
+                </p>
             )}
         </div>
     )
@@ -304,7 +334,12 @@ const URLInput: React.FC<URLInputProps> = ({ onChange, initialValue, validate })
         <>
             <LoaderInput loading={urlState.kind === 'LOADING'} className={classNames(deriveInputClassName(urlState))}>
                 <input
-                    className={classNames('form-control', deriveInputClassName(urlState), 'test-sourcegraph-url')}
+                    className={classNames(
+                        'form-control',
+                        'mb-2',
+                        deriveInputClassName(urlState),
+                        'test-sourcegraph-url'
+                    )}
                     id="sourcegraph-url"
                     type="url"
                     pattern="^https://.*"

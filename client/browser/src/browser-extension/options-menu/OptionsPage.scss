@@ -40,6 +40,12 @@
     &__permission-text {
         margin-top: 0.75rem;
     }
+
+    &__check-icon {
+        transform: scale(2);
+        right: 0;
+        top: 0.5rem;
+    }
 }
 
 .code-hosts-section {
