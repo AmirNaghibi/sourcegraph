@@ -1,7 +1,7 @@
 import '../../shared/polyfills'
 
-import { from, fromEvent, Subscription } from 'rxjs'
-import { first, filter, switchMap, tap, finalize, mergeMap } from 'rxjs/operators'
+import { fromEvent, Subscription } from 'rxjs'
+import { first, filter, mergeMap } from 'rxjs/operators'
 
 import { setLinkComponent, AnchorLink } from '@sourcegraph/shared/src/components/Link'
 
@@ -73,8 +73,12 @@ async function main(): Promise<void> {
                 return !isSourcegraphServer
             }),
             // TODO: explain why we need mergeMap instead of switchMap
-            mergeMap(sourcegraphURL =>
-                injectCodeIntelligence(
+            mergeMap(sourcegraphURL => {
+                if (!sourcegraphURL) {
+                    return Promise.resolve(new Subscription()) // TODO: refactor
+                }
+                console.log(`Attaching code intelligence [sourcegraphURL=${sourcegraphURL}]`)
+                return injectCodeIntelligence(
                     { sourcegraphURL, assetsURL: getAssetsURL(DEFAULT_SOURCEGRAPH_URL) },
                     IS_EXTENSION,
                     async function onCodeHostFound() {
@@ -106,10 +110,11 @@ async function main(): Promise<void> {
                         }
                     }
                 )
-            )
+            })
         )
         .subscribe(subscription => {
             if (lastSubscription) {
+                console.log('Detaching code intelligence')
                 lastSubscription.unsubscribe()
             }
             lastSubscription = subscription

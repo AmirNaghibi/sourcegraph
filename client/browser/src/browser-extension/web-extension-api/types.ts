@@ -42,12 +42,17 @@ export const featureFlagDefaults: FeatureFlags = {
 }
 
 interface SourcegraphURL {
+    /**
+     * @deprecated Use sgURLs
+     */
     sourcegraphURL: string
     repoToSgURL: { [key: string]: string | undefined }
-    sgURLs: {
-        url: string
-        disabled?: boolean
-    }[]
+    sgURLs: SgURL[]
+}
+
+export interface SgURL {
+    url: string
+    disabled?: boolean
 }
 
 export interface SyncStorageItems extends SourcegraphURL {

@@ -4,7 +4,6 @@ import CheckCircleOutlineIcon from 'mdi-react/CheckCircleOutlineIcon'
 import EarthIcon from 'mdi-react/EarthIcon'
 import LockIcon from 'mdi-react/LockIcon'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useToggle } from 'react-use'
 import { Observable } from 'rxjs'
 
 import { LoaderInput } from '@sourcegraph/branded/src/components/LoaderInput'
@@ -14,6 +13,7 @@ import { useInputValidation, deriveInputClassName } from '@sourcegraph/shared/sr
 
 import { DEFAULT_SOURCEGRAPH_URL } from '../../shared/util/context'
 import { knownCodeHosts } from '../knownCodeHosts'
+import { SgURL } from '../web-extension-api/types'
 
 import { OptionsPageAdvancedSettings } from './OptionsPageAdvancedSettings'
 
@@ -21,9 +21,9 @@ export interface OptionsPageProps {
     version: string
 
     // Sourcegraph URL
-    sourcegraphUrl: string
+    sgURLs: SgURL[]
     validateSourcegraphUrl: (url: string) => Observable<string | undefined>
-    onChangeSourcegraphUrl: (url: string, enabled: boolean) => void
+    onSgURLsChange: (sgURL: SgURL[]) => void
 
     // Option flags
     optionFlags: { key: string; label: string; value: boolean }[]
@@ -50,7 +50,7 @@ const LINK_PROPS: Pick<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'rel' | 't
 
 export const OptionsPage: React.FunctionComponent<OptionsPageProps> = ({
     version,
-    sourcegraphUrl,
+    sgURLs,
     validateSourcegraphUrl,
     isActivated,
     onToggleActivated,
@@ -61,7 +61,7 @@ export const OptionsPage: React.FunctionComponent<OptionsPageProps> = ({
     requestPermissionsHandler,
     optionFlags,
     onChangeOptionFlag,
-    onChangeSourcegraphUrl,
+    onSgURLsChange: onChangeSourcegraphUrl,
     currentHost,
 }) => {
     const [showAdvancedSettings, setShowAdvancedSettings] = useState(false)
@@ -69,6 +69,16 @@ export const OptionsPage: React.FunctionComponent<OptionsPageProps> = ({
     const toggleAdvancedSettings = useCallback(
         () => setShowAdvancedSettings(showAdvancedSettings => !showAdvancedSettings),
         []
+    )
+
+    const handleChange = useCallback(
+        (sgURL: SgURL, index: number) => {
+            const newURLs = [...sgURLs]
+            newURLs.splice(index, 1, sgURL)
+            console.log('newURLs', newURLs, sgURLs)
+            onChangeSourcegraphUrl(newURLs)
+        },
+        [onChangeSourcegraphUrl, sgURLs]
     )
 
     return (
@@ -92,26 +102,36 @@ export const OptionsPage: React.FunctionComponent<OptionsPageProps> = ({
                 {/* eslint-disable-next-line react/forbid-elements */}
                 <form onSubmit={preventDefault} noValidate={true}>
                     {/* TODO: implement onChange/onDisable of multiple URLs */}
-                    <SourcegraphURLInput
-                        label="Sourcegraph Cloud"
-                        description={
-                            <>
-                                Enable to get code intel for millions of public repositories and your synced private
-                                repositories on <a href={DEFAULT_SOURCEGRAPH_URL}>sourcegraph.com</a>
-                            </>
-                        }
-                        editable={false}
-                        initialValue={sourcegraphUrl}
-                        onChange={onChangeSourcegraphUrl}
-                        validate={validateSourcegraphUrl}
-                    />
-                    <SourcegraphURLInput
-                        label="Self hosted Sourcegraph instance"
-                        description="Enter the URL of your Sourcegraph instance to use the extension on private code."
-                        initialValue={sourcegraphUrl}
-                        onChange={onChangeSourcegraphUrl}
-                        validate={validateSourcegraphUrl}
-                    />
+                    {sgURLs.map(({ url, disabled }, index) => {
+                        const props =
+                            url === DEFAULT_SOURCEGRAPH_URL
+                                ? {
+                                      label: 'Sourcegraph Cloud',
+                                      description: (
+                                          <>
+                                              Enable to get code intel for millions of public repositories and your
+                                              synced private repositories on{' '}
+                                              <a href={DEFAULT_SOURCEGRAPH_URL}>sourcegraph.com</a>
+                                          </>
+                                      ),
+                                      editable: false,
+                                  }
+                                : {
+                                      label: 'Self hosted Sourcegraph instance',
+                                      description:
+                                          'Enter the URL of your Sourcegraph instance to use the extension on private code.',
+                                  }
+                        return (
+                            <SourcegraphURLInput
+                                {...props}
+                                key={url}
+                                disabled={disabled}
+                                initialValue={url}
+                                onChange={sgURL => handleChange(sgURL, index)}
+                                validate={validateSourcegraphUrl}
+                            />
+                        )
+                    })}
                 </form>
 
                 <a href="https://docs.sourcegraph.com/integration/browser_extension#privacy" {...LINK_PROPS}>
@@ -252,41 +272,34 @@ const CheckIcon: React.FC<{ className?: string }> = ({ className }) => (
 interface SourcegraphURLInputProps extends Omit<URLInputProps, 'onChange'> {
     label: string
     description: JSX.Element | string
-    onChange: OptionsPageProps['onChangeSourcegraphUrl']
+    onChange: (sgURL: SgURL) => void
     editable?: boolean
+    disabled?: boolean
 }
 const SourcegraphURLInput: React.FC<SourcegraphURLInputProps> = ({
     label,
     description,
+    disabled,
     editable = true,
     initialValue,
     onChange,
     validate,
 }) => {
-    const [enabled, onToggleEnabled] = useToggle(true)
-    const [value, setValue] = useState<string | null>(null)
+    const [enabled, setEnabled] = useState(!disabled)
+    const [url, setUrl] = useState<string>(initialValue)
 
     useEffect(() => {
-        if (!value) {
+        if (!url) {
             return
         }
-        onChange(value, enabled)
-    }, [onChange, value, enabled])
+        onChange({ url, disabled: !enabled })
+    }, [onChange, url, enabled])
 
     return (
         <div className="mb-3 position-relative">
-            <Toggle value={enabled} onToggle={onToggleEnabled} title={label} className="mr-2" />
+            <Toggle value={enabled} onToggle={setEnabled} title={label} className="mr-2" />
             <label htmlFor="sourcegraph-url">{label}</label>
-            {enabled && editable && (
-                <URLInput
-                    initialValue={initialValue}
-                    onChange={url => {
-                        console.log('onChange', url)
-                        setValue(url)
-                    }}
-                    validate={validate}
-                />
-            )}
+            {enabled && editable && <URLInput initialValue={url} onChange={setUrl} validate={validate} />}
             {!editable && enabled && <CheckIcon className="options-page__check-icon position-absolute" />}
             {(!enabled || !editable) && (
                 <p>

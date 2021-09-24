@@ -33,6 +33,7 @@ import { OptionsPage, URL_AUTH_ERROR, URL_FETCH_ERROR } from '../options-menu/Op
 import { ThemeWrapper } from '../ThemeWrapper'
 import { background } from '../web-extension-api/runtime'
 import { observeStorageKey, storage } from '../web-extension-api/storage'
+import { SgURL } from '../web-extension-api/types'
 
 interface TabStatus {
     host: string
@@ -44,8 +45,6 @@ interface TabStatus {
 assertEnvironment('OPTIONS')
 
 initSentry('options')
-
-const IS_EXTENSION = true
 
 /**
  * A list of protocols where we should *not* show the permissions notification.
@@ -124,7 +123,6 @@ const observeOptionFlagsWithValues = (): Observable<OptionFlagWithValue[]> => {
 }
 
 const observingIsActivated = observeStorageKey('sync', 'disableExtension').pipe(map(isDisabled => !isDisabled))
-const observingSourcegraphUrl = observeSourcegraphURL(true)
 const observingOptionFlagsWithValues = observeOptionFlagsWithValues()
 
 function handleToggleActivated(isActivated: boolean): void {
@@ -137,8 +135,8 @@ function handleChangeOptionFlag(key: string, value: boolean): void {
     }
 }
 
-function handleChangeSourcegraphUrl(url: string): void {
-    SourcegraphURL.update([{ url }]).catch(console.error)
+function handleSgURLsChange(sgURLs: SgURL[]): void {
+    SourcegraphURL.update(sgURLs).catch(console.error)
 }
 
 function buildRequestPermissionsHandler({ protocol, host }: TabStatus) {
@@ -151,7 +149,8 @@ function buildRequestPermissionsHandler({ protocol, host }: TabStatus) {
 }
 
 const Options: React.FunctionComponent = () => {
-    const sourcegraphUrl = useObservable(observingSourcegraphUrl) || ''
+    const sourcegraphURL = useObservable(SourcegraphURL.observe())
+    const sgURLs = useObservable(SourcegraphURL.URLs)
     const isActivated = useObservable(observingIsActivated)
     const optionFlagsWithValues = useObservable(observingOptionFlagsWithValues) || []
     const [currentTabStatus, setCurrentTabStatus] = useState<
@@ -185,8 +184,8 @@ const Options: React.FunctionComponent = () => {
         <ThemeWrapper>
             <OptionsPage
                 isFullPage={isFullPage}
-                sourcegraphUrl={sourcegraphUrl}
-                onChangeSourcegraphUrl={handleChangeSourcegraphUrl}
+                sgURLs={sgURLs || []}
+                onSgURLsChange={handleSgURLsChange}
                 version={version}
                 validateSourcegraphUrl={validateSourcegraphUrl}
                 isActivated={!!isActivated}
@@ -194,7 +193,7 @@ const Options: React.FunctionComponent = () => {
                 optionFlags={optionFlagsWithValues}
                 onChangeOptionFlag={handleChangeOptionFlag}
                 showPrivateRepositoryAlert={
-                    currentTabStatus?.status.hasPrivateCloudError && sourcegraphUrl === DEFAULT_SOURCEGRAPH_URL
+                    currentTabStatus?.status.hasPrivateCloudError && sourcegraphURL === DEFAULT_SOURCEGRAPH_URL
                 }
                 showSourcegraphCloudAlert={showSourcegraphCloudAlert}
                 permissionAlert={permissionAlert}
