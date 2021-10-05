@@ -34,9 +34,12 @@ const checkRepoCloned = (sourcegraphURL: string, repoName: string): Observable<b
 export const SourcegraphURL = (() => {
     const selfHostedSourcegraphURL = new BehaviorSubject<string | undefined>(undefined)
     const currentSourcegraphURL = new BehaviorSubject<string>(CLOUD_SOURCEGRAPH_URL)
+    const blocklist = new BehaviorSubject<string | null | undefined>(null)
 
     // eslint-disable-next-line rxjs/no-ignored-subscription
     observeStorageKey('sync', 'sourcegraphURL').subscribe(selfHostedSourcegraphURL)
+    // eslint-disable-next-line rxjs/no-ignored-subscription
+    observeStorageKey('sync', 'blocklist').subscribe(blocklist)
 
     const getAllURLs = (): string[] =>
         [CLOUD_SOURCEGRAPH_URL, selfHostedSourcegraphURL.value].filter(Boolean) as string[]
@@ -103,5 +106,7 @@ export const SourcegraphURL = (() => {
          * Set self-hosted Sourcegraph URL
          */
         setSelfHostedSourcegraphURL: (sourcegraphURL?: string): Promise<void> => storage.sync.set({ sourcegraphURL }),
+        getBlocklist: () => blocklist.asObservable(),
+        setBlocklist: (blocklist?: string | null): Promise<void> => storage.sync.set({ blocklist }),
     }
 })()

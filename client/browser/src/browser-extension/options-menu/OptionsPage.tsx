@@ -12,7 +12,8 @@ import { useInputValidation, deriveInputClassName } from '@sourcegraph/shared/sr
 
 import { CLOUD_SOURCEGRAPH_URL } from '../../shared/platform/sourcegraphUrl'
 
-import { OptionsPageAdvancedSettings } from './OptionsPageAdvancedSettings'
+import { InfoText } from './components/InfoText'
+import { OptionsPageAdvancedSettings } from './components/OptionsPageAdvancedSettings'
 
 export interface OptionsPageProps {
     version: string
@@ -21,6 +22,8 @@ export interface OptionsPageProps {
     selfHostedSourcegraphURL?: string
     validateSourcegraphUrl: (url: string) => Observable<string | undefined>
     onSelfHostedSourcegraphURLChange: (sourcegraphURL?: string) => void
+    blocklist?: string | null
+    onBlocklistChange: (value?: string | null) => void
 
     // Option flags
     optionFlags: { key: string; label: string; value: boolean }[]
@@ -61,6 +64,8 @@ export const OptionsPage: React.FunctionComponent<OptionsPageProps> = ({
     optionFlags,
     onChangeOptionFlag,
     onSelfHostedSourcegraphURLChange,
+    blocklist,
+    onBlocklistChange,
 }) => {
     const [showAdvancedSettings, setShowAdvancedSettings] = useState(false)
 
@@ -124,12 +129,19 @@ export const OptionsPage: React.FunctionComponent<OptionsPageProps> = ({
                 <a href="https://docs.sourcegraph.com/integration/browser_extension#privacy" {...LINK_PROPS}>
                     <small>How do we keep your code private?</small>
                 </a>
-                <a type="#" onClick={toggleAdvancedSettings}>
-                    <small>{showAdvancedSettings ? 'Hide' : 'Show'} advanced settings</small>
-                </a>
-                {/* {showAdvancedSettings && ( */}
-                <OptionsPageAdvancedSettings optionFlags={optionFlags} onChangeOptionFlag={onChangeOptionFlag} />
-                {/* )} */}
+                <p className="mb-0">
+                    <button type="button" className="btn btn-link btn-sm p-0" onClick={toggleAdvancedSettings}>
+                        <small>{showAdvancedSettings ? 'Hide' : 'Show'} advanced settings</small>
+                    </button>
+                </p>
+                {showAdvancedSettings && (
+                    <OptionsPageAdvancedSettings
+                        optionFlags={optionFlags}
+                        onChangeOptionFlag={onChangeOptionFlag}
+                        blocklist={blocklist}
+                        onBlocklistChange={onBlocklistChange}
+                    />
+                )}
             </section>
         </div>
     )
@@ -268,10 +280,6 @@ const SourcegraphURLInput: React.FC<SourcegraphURLInputProps> = ({
 
     const isLoading = urlState.kind === 'LOADING' && !!urlState.value
 
-    const descriptionContent = <p className="options-page__input-description">{description}</p>
-
-    console.log({ initialValue, urlState })
-
     return (
         <div className={classNames('position-relative', className)}>
             <label htmlFor="sourcegraph-url">{label}</label>
@@ -323,7 +331,7 @@ const SourcegraphURLInput: React.FC<SourcegraphURLInputProps> = ({
                         )}
                     </>
                 ) : (
-                    descriptionContent
+                    <InfoText>{description}</InfoText>
                 )}
             </div>
             <div className="options-page__icon-container position-absolute d-flex justify-content-center align-items-center">
@@ -337,7 +345,7 @@ const SourcegraphURLInput: React.FC<SourcegraphURLInputProps> = ({
                         <small>{CLOUD_SOURCEGRAPH_URL} is down</small>
                     ))}
             </div>
-            {!editable && descriptionContent}
+            {!editable && <InfoText>{description}</InfoText>}
         </div>
     )
 }

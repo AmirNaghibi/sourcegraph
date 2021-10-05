@@ -138,6 +138,10 @@ function handleSelfHostedSourcegraphURLChange(sourcegraphURL?: string): void {
     SourcegraphURL.setSelfHostedSourcegraphURL(sourcegraphURL).catch(console.error)
 }
 
+function handleBlocklistChange(blocklist?: string): void {
+    SourcegraphURL.setBlocklist(blocklist).catch(console.error)
+}
+
 function buildRequestPermissionsHandler({ protocol, host }: TabStatus) {
     return function requestPermissionsHandler(event: React.MouseEvent) {
         event.preventDefault()
@@ -150,6 +154,7 @@ function buildRequestPermissionsHandler({ protocol, host }: TabStatus) {
 const Options: React.FunctionComponent = () => {
     const sourcegraphURL = useObservable(SourcegraphURL.observe())
     const selfHostedSourcegraphURL = useObservable(SourcegraphURL.getSelfHostedSourcegraphURL())
+    const blocklist = useObservable(SourcegraphURL.getBlocklist())
     const isActivated = useObservable(observingIsActivated)
     const optionFlagsWithValues = useObservable(observingOptionFlagsWithValues) || []
     const [currentTabStatus, setCurrentTabStatus] = useState<
@@ -182,8 +187,14 @@ const Options: React.FunctionComponent = () => {
     return (
         <ThemeWrapper>
             <OptionsPage
-                {...{ isFullPage, selfHostedSourcegraphURL, version, validateSourcegraphUrl, permissionAlert }}
+                isFullPage={isFullPage}
+                selfHostedSourcegraphURL={selfHostedSourcegraphURL}
+                version={version}
+                blocklist={blocklist}
+                validateSourcegraphUrl={validateSourcegraphUrl}
+                permissionAlert={permissionAlert}
                 onSelfHostedSourcegraphURLChange={handleSelfHostedSourcegraphURLChange}
+                onBlocklistChange={handleBlocklistChange}
                 isActivated={!!isActivated}
                 onToggleActivated={handleToggleActivated}
                 optionFlags={optionFlagsWithValues}
