@@ -98,10 +98,10 @@ export const SourcegraphURL = (() => {
         /**
          * Get self-hosted Sourcegraph URL
          */
-        get: () => selfHostedSourcegraphURL.asObservable(),
+        getSelfHostedSourcegraphURL: () => selfHostedSourcegraphURL.asObservable(),
         /**
          * Set self-hosted Sourcegraph URL
          */
-        set: (sourcegraphURL?: string): Promise<void> => storage.sync.set({ sourcegraphURL }),
+        setSelfHostedSourcegraphURL: (sourcegraphURL?: string): Promise<void> => storage.sync.set({ sourcegraphURL }),
     }
 })()

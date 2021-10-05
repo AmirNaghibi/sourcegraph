@@ -142,7 +142,7 @@ async function main(): Promise<void> {
         observeStorageKey('managed', 'sourcegraphURL')
             .pipe(
                 filter(isDefined),
-                concatMap(sourcegraphURL => SourcegraphURL.set(sourcegraphURL))
+                concatMap(sourcegraphURL => SourcegraphURL.setSelfHostedSourcegraphURL(sourcegraphURL))
             )
             .subscribe()
     )

@@ -1,4 +1,6 @@
-import React from 'react'
+import React, { useState } from 'react'
+
+import styles from './OptionsPageAdvancedSettings.module.scss'
 
 interface OptionsPageAdvancedSettingsProps {
     optionFlags: { key: string; label: string; value: boolean }[]
@@ -28,6 +30,32 @@ export const OptionsPageAdvancedSettings: React.FunctionComponent<OptionsPageAdv
                     </label>
                 </div>
             ))}
+            <CodeTextArea />
         </div>
     </section>
 )
+
+const CodeTextArea: React.FunctionComponent = () => {
+    const [value, setValue] = useState('') // TODO use stored value
+
+    const onChange: React.ChangeEventHandler<HTMLTextAreaElement> = event => {
+        setValue(event.target.value)
+    }
+
+    return (
+        <div className={styles.blocklistEditor}>
+            <ul className={styles.blocklistEditorGutter}>
+                {value.split(/\n/).map((line, index) => (
+                    <li key={index}>{index + 1}</li>
+                ))}
+            </ul>
+            <textarea
+                rows={4}
+                className={styles.blocklistEditorTextarea}
+                placeholder={`1
+https://github.com/org/repo`}
+                onChange={onChange}
+            />
+        </div>
+    )
+}

@@ -7,6 +7,7 @@ import { Observable } from 'rxjs'
 import { LoaderInput } from '@sourcegraph/branded/src/components/LoaderInput'
 import { SourcegraphLogo } from '@sourcegraph/branded/src/components/SourcegraphLogo'
 import { Toggle } from '@sourcegraph/branded/src/components/Toggle'
+import { LoadingSpinner } from '@sourcegraph/react-loading-spinner'
 import { useInputValidation, deriveInputClassName } from '@sourcegraph/shared/src/util/useInputValidation'
 
 import { CLOUD_SOURCEGRAPH_URL } from '../../shared/platform/sourcegraphUrl'
@@ -31,7 +32,10 @@ export interface OptionsPageProps {
     isFullPage: boolean
     showPrivateRepositoryAlert?: boolean
     showSourcegraphCloudAlert?: boolean
-    permissionAlert?: { name: string; icon?: React.ComponentType<{ className?: string }> }
+    permissionAlert?: {
+        name: string
+        icon?: React.ComponentType<{ className?: string }>
+    }
     requestPermissionsHandler?: React.MouseEventHandler
 }
 
@@ -120,12 +124,12 @@ export const OptionsPage: React.FunctionComponent<OptionsPageProps> = ({
                 <a href="https://docs.sourcegraph.com/integration/browser_extension#privacy" {...LINK_PROPS}>
                     <small>How do we keep your code private?</small>
                 </a>
-                <a type="button" onClick={toggleAdvancedSettings}>
+                <a type="#" onClick={toggleAdvancedSettings}>
                     <small>{showAdvancedSettings ? 'Hide' : 'Show'} advanced settings</small>
                 </a>
-                {showAdvancedSettings && (
-                    <OptionsPageAdvancedSettings optionFlags={optionFlags} onChangeOptionFlag={onChangeOptionFlag} />
-                )}
+                {/* {showAdvancedSettings && ( */}
+                <OptionsPageAdvancedSettings optionFlags={optionFlags} onChangeOptionFlag={onChangeOptionFlag} />
+                {/* )} */}
             </section>
         </div>
     )
@@ -266,66 +270,73 @@ const SourcegraphURLInput: React.FC<SourcegraphURLInputProps> = ({
 
     const descriptionContent = <p className="options-page__input-description">{description}</p>
 
+    console.log({ initialValue, urlState })
+
     return (
         <div className={classNames('position-relative', className)}>
             <label htmlFor="sourcegraph-url">{label}</label>
-            {editable && (
-                <>
-                    <LoaderInput loading={isLoading} className={classNames(deriveInputClassName(urlState))}>
-                        <input
-                            className={classNames(
-                                'form-control',
-                                'mb-2',
-                                urlState.value ? deriveInputClassName(urlState) : '',
-                                'test-sourcegraph-url'
-                            )}
-                            id="sourcegraph-url"
-                            type="url"
-                            pattern="^https://.*"
-                            placeholder="https://sourcegraph.example.com"
-                            value={urlState.value}
-                            onChange={nextUrlFieldChange}
-                            ref={urlInputElements}
-                            spellCheck={false}
-                        />
-                    </LoaderInput>
-                    {urlState.value ? (
-                        <>
-                            {urlState.kind === 'LOADING' && (
-                                <small className="text-muted d-block mt-1">Checking...</small>
-                            )}
-                            {urlState.kind === 'INVALID' && (
-                                <small className="invalid-feedback">
-                                    {urlState.reason === URL_FETCH_ERROR && 'Incorrect Sourcegraph instance address'}
-                                    {urlState.reason === URL_AUTH_ERROR ? (
-                                        <>
-                                            Authentication to Sourcegraph failed.{' '}
-                                            <a href={urlState.value} {...LINK_PROPS}>
-                                                Sign in to your instance
-                                            </a>{' '}
-                                            to continue
-                                        </>
-                                    ) : urlInputReference.current?.validity.typeMismatch ? (
-                                        'Please enter a valid URL, including the protocol prefix (e.g. https://sourcegraph.example.com).'
-                                    ) : urlInputReference.current?.validity.patternMismatch ? (
-                                        'The browser extension can only work over HTTPS in modern browsers.'
-                                    ) : (
-                                        urlState.reason
-                                    )}
-                                </small>
-                            )}
-                            {urlState.kind === 'VALID' && (
-                                <small className="valid-feedback test-valid-sourcegraph-url-feedback">
-                                    Looks good!
-                                </small>
-                            )}
-                        </>
+            <div className={classNames({ 'options-page__input-disabled': !editable })}>
+                <LoaderInput loading={isLoading} className={classNames(deriveInputClassName(urlState))}>
+                    <input
+                        className={classNames(
+                            'form-control',
+                            'mb-2',
+                            urlState.value ? deriveInputClassName(urlState) : '',
+                            'test-sourcegraph-url'
+                        )}
+                        id="sourcegraph-url"
+                        type="url"
+                        pattern="^https://.*"
+                        placeholder="https://sourcegraph.example.com"
+                        value={urlState.value}
+                        onChange={nextUrlFieldChange}
+                        ref={urlInputElements}
+                        spellCheck={false}
+                        disabled={!editable}
+                    />
+                </LoaderInput>
+                {urlState.value ? (
+                    <>
+                        {urlState.kind === 'LOADING' && <small className="text-muted d-block mt-1">Checking...</small>}
+                        {urlState.kind === 'INVALID' && (
+                            <small className="invalid-feedback">
+                                {urlState.reason === URL_FETCH_ERROR && 'Incorrect Sourcegraph instance address'}
+                                {urlState.reason === URL_AUTH_ERROR ? (
+                                    <>
+                                        Authentication to Sourcegraph failed.{' '}
+                                        <a href={urlState.value} {...LINK_PROPS}>
+                                            Sign in to your instance
+                                        </a>{' '}
+                                        to continue
+                                    </>
+                                ) : urlInputReference.current?.validity.typeMismatch ? (
+                                    'Please enter a valid URL, including the protocol prefix (e.g. https://sourcegraph.example.com).'
+                                ) : urlInputReference.current?.validity.patternMismatch ? (
+                                    'The browser extension can only work over HTTPS in modern browsers.'
+                                ) : (
+                                    urlState.reason
+                                )}
+                            </small>
+                        )}
+                        {urlState.kind === 'VALID' && (
+                            <small className="valid-feedback test-valid-sourcegraph-url-feedback">Looks good!</small>
+                        )}
+                    </>
+                ) : (
+                    descriptionContent
+                )}
+            </div>
+            <div className="options-page__icon-container position-absolute d-flex justify-content-center align-items-center">
+                {!editable &&
+                    // TODO: render validation
+                    (urlState.kind === 'LOADING' ? (
+                        <LoadingSpinner className="options-page__icon-loading" />
+                    ) : urlState.kind === 'VALID' ? (
+                        <CheckIcon className="options-page__icon-check" />
                     ) : (
-                        descriptionContent
-                    )}
-                </>
-            )}
-            {!editable && <CheckIcon className="options-page__check-icon position-absolute" />}
+                        <small>{CLOUD_SOURCEGRAPH_URL} is down</small>
+                    ))}
+            </div>
             {!editable && descriptionContent}
         </div>
     )

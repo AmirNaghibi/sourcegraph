@@ -1,0 +1,39 @@
+.blocklist-editor {
+    resize: none;
+    grid-template-columns: 3rem auto;
+    display: grid;
+
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--code-bg);
+
+    &__textarea {
+        resize: none;
+        width: 100%;
+        border: none;
+        background: transparent;
+        font-family: var(--code-font-family);
+
+        &,
+        &:active,
+        &:focus {
+            outline: none;
+            box-shadow: none;
+        }
+    }
+
+    &__gutter {
+        list-style-type: none;
+        // padding-left: 1rem;
+        // padding-right: 1rem;
+        padding: 0.125rem 1rem 0 1rem;
+        color: var(--line-number-color);
+
+        li {
+            height: 1.25rem;
+            padding: 0;
+            margin: 0;
+            text-align: right;
+        }
+    }
+}

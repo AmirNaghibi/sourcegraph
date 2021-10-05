@@ -135,7 +135,7 @@ function handleChangeOptionFlag(key: string, value: boolean): void {
 }
 
 function handleSelfHostedSourcegraphURLChange(sourcegraphURL?: string): void {
-    SourcegraphURL.set(sourcegraphURL).catch(console.error)
+    SourcegraphURL.setSelfHostedSourcegraphURL(sourcegraphURL).catch(console.error)
 }
 
 function buildRequestPermissionsHandler({ protocol, host }: TabStatus) {
@@ -149,7 +149,7 @@ function buildRequestPermissionsHandler({ protocol, host }: TabStatus) {
 
 const Options: React.FunctionComponent = () => {
     const sourcegraphURL = useObservable(SourcegraphURL.observe())
-    const selfHostedSourcegraphURL = useObservable(SourcegraphURL.get())
+    const selfHostedSourcegraphURL = useObservable(SourcegraphURL.getSelfHostedSourcegraphURL())
     const isActivated = useObservable(observingIsActivated)
     const optionFlagsWithValues = useObservable(observingOptionFlagsWithValues) || []
     const [currentTabStatus, setCurrentTabStatus] = useState<

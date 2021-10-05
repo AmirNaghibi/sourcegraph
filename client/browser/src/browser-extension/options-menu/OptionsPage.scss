@@ -32,10 +32,21 @@
         margin-top: 0.75rem;
     }
 
-    &__check-icon {
-        transform: scale(2);
+    &__icon-container {
         right: 0;
+    }
+
+    &__icon-check {
+        transform: scale(2);
         top: 0.5rem;
+    }
+
+    &__icon-loading {
+        padding: 0.25rem;
+    }
+
+    &__input-disabled {
+        display: none;
     }
 
     &__input-description {
