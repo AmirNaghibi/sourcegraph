@@ -192,7 +192,6 @@ const Options: React.FunctionComponent = () => {
                     currentTabStatus?.status.hasPrivateCloudError && sourcegraphURL === CLOUD_SOURCEGRAPH_URL
                 }
                 showSourcegraphCloudAlert={showSourcegraphCloudAlert}
-                currentHost={currentTabStatus?.status.host}
                 requestPermissionsHandler={currentTabStatus?.handler}
             />
         </ThemeWrapper>

@@ -1,5 +1,6 @@
 .options-page {
     width: 26rem;
+    color: var(--body-color);
 
     &--full {
         margin: 8rem auto;
@@ -11,16 +12,6 @@
 
         &:last-of-type {
             border-bottom: none;
-        }
-    }
-
-    &__split-section-part {
-        padding: 0.75rem 1rem;
-        flex: 50%;
-        border-left: 1px solid var(--border-color-2);
-        text-align: center;
-        &:first-child {
-            border-left: none;
         }
     }
 
@@ -46,13 +37,11 @@
         right: 0;
         top: 0.5rem;
     }
-}
 
-.code-hosts-section {
-    &__icon {
-        display: inline-flex;
-        place-items: center;
-        padding: 0.5rem;
-        border-radius: 100%;
+    &__input-description {
+        padding: 0;
+        margin: 0;
+        font-size: 0.8rem;
+        color: var(--text-muted);
     }
 }

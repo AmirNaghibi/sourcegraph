@@ -1,7 +1,5 @@
 import classNames from 'classnames'
-import BookOpenPageVariantIcon from 'mdi-react/BookOpenPageVariantIcon'
 import CheckCircleOutlineIcon from 'mdi-react/CheckCircleOutlineIcon'
-import EarthIcon from 'mdi-react/EarthIcon'
 import LockIcon from 'mdi-react/LockIcon'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Observable } from 'rxjs'
@@ -12,7 +10,6 @@ import { Toggle } from '@sourcegraph/branded/src/components/Toggle'
 import { useInputValidation, deriveInputClassName } from '@sourcegraph/shared/src/util/useInputValidation'
 
 import { CLOUD_SOURCEGRAPH_URL } from '../../shared/platform/sourcegraphUrl'
-import { knownCodeHosts } from '../knownCodeHosts'
 
 import { OptionsPageAdvancedSettings } from './OptionsPageAdvancedSettings'
 
@@ -36,7 +33,6 @@ export interface OptionsPageProps {
     showSourcegraphCloudAlert?: boolean
     permissionAlert?: { name: string; icon?: React.ComponentType<{ className?: string }> }
     requestPermissionsHandler?: React.MouseEventHandler
-    currentHost?: string
 }
 
 // "Error code" constants for Sourcegraph URL validation
@@ -61,7 +57,6 @@ export const OptionsPage: React.FunctionComponent<OptionsPageProps> = ({
     optionFlags,
     onChangeOptionFlag,
     onSelfHostedSourcegraphURLChange,
-    currentHost,
 }) => {
     const [showAdvancedSettings, setShowAdvancedSettings] = useState(false)
 
@@ -86,13 +81,14 @@ export const OptionsPage: React.FunctionComponent<OptionsPageProps> = ({
                 </div>
                 <div className="options-page__version">v{version}</div>
             </section>
-            <CodeHostsSection currentHost={currentHost} />
+            <InfoSection />
             <section className="options-page__section border-0">
                 {/* eslint-disable-next-line react/forbid-elements */}
                 <form onSubmit={preventDefault} noValidate={true}>
                     <SourcegraphURLInput
                         label="Sourcegraph cloud"
                         editable={false}
+                        className="mb-3"
                         validate={validateSourcegraphUrl}
                         initialValue={CLOUD_SOURCEGRAPH_URL}
                         description={
@@ -111,10 +107,6 @@ export const OptionsPage: React.FunctionComponent<OptionsPageProps> = ({
                         description="Enter the URL of your Sourcegraph instance to use the extension on a private instance."
                     />
                 </form>
-
-                <a href="https://docs.sourcegraph.com/integration/browser_extension#privacy" {...LINK_PROPS}>
-                    <small>How do we keep your code private?</small>
-                </a>
             </section>
 
             {permissionAlert && (
@@ -125,28 +117,15 @@ export const OptionsPage: React.FunctionComponent<OptionsPageProps> = ({
 
             {showPrivateRepositoryAlert && <PrivateRepositoryAlert />}
             <section className="options-page__section">
-                <p className="mb-0">
-                    <button type="button" className="btn btn-link btn-sm p-0" onClick={toggleAdvancedSettings}>
-                        <small>{showAdvancedSettings ? 'Hide' : 'Show'} advanced settings</small>
-                    </button>
-                </p>
+                <a href="https://docs.sourcegraph.com/integration/browser_extension#privacy" {...LINK_PROPS}>
+                    <small>How do we keep your code private?</small>
+                </a>
+                <a type="button" onClick={toggleAdvancedSettings}>
+                    <small>{showAdvancedSettings ? 'Hide' : 'Show'} advanced settings</small>
+                </a>
                 {showAdvancedSettings && (
                     <OptionsPageAdvancedSettings optionFlags={optionFlags} onChangeOptionFlag={onChangeOptionFlag} />
                 )}
-            </section>
-            <section className="d-flex">
-                <div className="options-page__split-section-part">
-                    <a href="https://sourcegraph.com/search" {...LINK_PROPS}>
-                        <EarthIcon className="icon-inline mr-2" />
-                        Sourcegraph Cloud
-                    </a>
-                </div>
-                <div className="options-page__split-section-part">
-                    <a href="https://docs.sourcegraph.com" {...LINK_PROPS}>
-                        <BookOpenPageVariantIcon className="icon-inline mr-2" />
-                        Documentation
-                    </a>
-                </div>
             </section>
         </div>
     )
@@ -205,22 +184,13 @@ const PrivateRepositoryAlert: React.FunctionComponent = () => (
     </section>
 )
 
-const CodeHostsSection: React.FunctionComponent<{ currentHost?: string }> = ({ currentHost }) => (
+const InfoSection: React.FC = () => (
     <section className="options-page__section">
-        <p>Get code intelligence tooltips while browsing files and reading PRs on your code host.</p>
-        <div>
-            {knownCodeHosts.map(({ host, icon: Icon }) => (
-                <span
-                    key={host}
-                    className={classNames('code-hosts-section__icon', {
-                        // Use `endsWith` in order to match subdomains.
-                        'bg-3': currentHost?.endsWith(host),
-                    })}
-                >
-                    {Icon && <Icon />}
-                </span>
-            ))}
-        </div>
+        Get code intelligence tooltips while browsing and reviewing code on your code host.{' '}
+        <a href="https://docs.sourcegraph.com" {...LINK_PROPS}>
+            Learn more
+        </a>{' '}
+        Learn more about the extension and compatible code hosts.
     </section>
 )
 
@@ -251,6 +221,7 @@ interface SourcegraphURLInputProps {
     label: string
     description: JSX.Element | string
     initialValue: string
+    className?: string
     validate: OptionsPageProps['validateSourcegraphUrl']
     editable?: boolean
     onChange?: (value: string) => void
@@ -259,6 +230,7 @@ interface SourcegraphURLInputProps {
 const SourcegraphURLInput: React.FC<SourcegraphURLInputProps> = ({
     label,
     description,
+    className,
     editable = true,
     initialValue,
     onChange,
@@ -292,14 +264,10 @@ const SourcegraphURLInput: React.FC<SourcegraphURLInputProps> = ({
 
     const isLoading = urlState.kind === 'LOADING' && !!urlState.value
 
-    const descriptionContent = (
-        <p>
-            <small>{description}</small>
-        </p>
-    )
+    const descriptionContent = <p className="options-page__input-description">{description}</p>
 
     return (
-        <div className="mb-3 position-relative">
+        <div className={classNames('position-relative', className)}>
             <label htmlFor="sourcegraph-url">{label}</label>
             {editable && (
                 <>
