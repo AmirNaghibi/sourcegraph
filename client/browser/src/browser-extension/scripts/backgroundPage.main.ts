@@ -142,7 +142,7 @@ async function main(): Promise<void> {
         observeStorageKey('managed', 'sourcegraphURL')
             .pipe(
                 filter(isDefined),
-                concatMap(sourcegraphURL => SourcegraphURL.update([{ url: sourcegraphURL }]))
+                concatMap(sourcegraphURL => SourcegraphURL.set(sourcegraphURL))
             )
             .subscribe()
     )
@@ -433,7 +433,7 @@ function observeCurrentTabPrivateCloudError(): Observable<boolean> {
 function observeSourcegraphUrlValidation(): Observable<boolean> {
     return merge(
         // Whenever the URL was persisted to storage, we can assume it was validated before-hand
-        SourcegraphURL.observe(true).pipe(mapTo(true)),
+        SourcegraphURL.observe().pipe(mapTo(true)),
         timer(0, INTERVAL_FOR_SOURCEGRPAH_URL_CHECK).pipe(mergeMap(() => validateSite()))
     )
 }

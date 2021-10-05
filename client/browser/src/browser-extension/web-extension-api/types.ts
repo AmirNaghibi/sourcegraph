@@ -43,16 +43,19 @@ export const featureFlagDefaults: FeatureFlags = {
 
 interface SourcegraphURL {
     /**
-     * @deprecated Use sgURLs
+     * Self-hosted Sourcegraph URL
      */
-    sourcegraphURL: string
-    repoToSgURL: { [key: string]: string | undefined }
-    sgURLs: SgURL[]
-}
-
-export interface SgURL {
-    url: string
-    disabled?: boolean
+    sourcegraphURL?: string
+    /**
+     * rawRepoName => sourcegraphURL
+     */
+    cache: {
+        [key: string]: string | undefined
+    }
+    /**
+     * rawRepoNames which are blocked to use against Cloud Sourcegraph URL
+     */
+    blockList: string
 }
 
 export interface SyncStorageItems extends SourcegraphURL {

@@ -15,9 +15,9 @@ import { useObservable } from '@sourcegraph/shared/src/util/useObservable'
 
 import { fetchSite } from '../../shared/backend/server'
 import { isExtension } from '../../shared/context'
-import { SourcegraphURL } from '../../shared/platform/sourcegraphUrl'
+import { CLOUD_SOURCEGRAPH_URL, SourcegraphURL } from '../../shared/platform/sourcegraphUrl'
 import { initSentry } from '../../shared/sentry'
-import { observeSourcegraphURL, getExtensionVersion, DEFAULT_SOURCEGRAPH_URL } from '../../shared/util/context'
+import { getExtensionVersion } from '../../shared/util/context'
 import { featureFlags } from '../../shared/util/featureFlags'
 import {
     OptionFlagKey,
@@ -33,7 +33,6 @@ import { OptionsPage, URL_AUTH_ERROR, URL_FETCH_ERROR } from '../options-menu/Op
 import { ThemeWrapper } from '../ThemeWrapper'
 import { background } from '../web-extension-api/runtime'
 import { observeStorageKey, storage } from '../web-extension-api/storage'
-import { SgURL } from '../web-extension-api/types'
 
 interface TabStatus {
     host: string
@@ -135,8 +134,8 @@ function handleChangeOptionFlag(key: string, value: boolean): void {
     }
 }
 
-function handleSgURLsChange(sgURLs: SgURL[]): void {
-    SourcegraphURL.update(sgURLs).catch(console.error)
+function handleSelfHostedSourcegraphURLChange(sourcegraphURL?: string): void {
+    SourcegraphURL.set(sourcegraphURL).catch(console.error)
 }
 
 function buildRequestPermissionsHandler({ protocol, host }: TabStatus) {
@@ -150,7 +149,7 @@ function buildRequestPermissionsHandler({ protocol, host }: TabStatus) {
 
 const Options: React.FunctionComponent = () => {
     const sourcegraphURL = useObservable(SourcegraphURL.observe())
-    const sgURLs = useObservable(SourcegraphURL.URLs)
+    const selfHostedSourcegraphURL = useObservable(SourcegraphURL.get())
     const isActivated = useObservable(observingIsActivated)
     const optionFlagsWithValues = useObservable(observingOptionFlagsWithValues) || []
     const [currentTabStatus, setCurrentTabStatus] = useState<
@@ -183,20 +182,16 @@ const Options: React.FunctionComponent = () => {
     return (
         <ThemeWrapper>
             <OptionsPage
-                isFullPage={isFullPage}
-                sgURLs={sgURLs || []}
-                onSgURLsChange={handleSgURLsChange}
-                version={version}
-                validateSourcegraphUrl={validateSourcegraphUrl}
+                {...{ isFullPage, selfHostedSourcegraphURL, version, validateSourcegraphUrl, permissionAlert }}
+                onSelfHostedSourcegraphURLChange={handleSelfHostedSourcegraphURLChange}
                 isActivated={!!isActivated}
                 onToggleActivated={handleToggleActivated}
                 optionFlags={optionFlagsWithValues}
                 onChangeOptionFlag={handleChangeOptionFlag}
                 showPrivateRepositoryAlert={
-                    currentTabStatus?.status.hasPrivateCloudError && sourcegraphURL === DEFAULT_SOURCEGRAPH_URL
+                    currentTabStatus?.status.hasPrivateCloudError && sourcegraphURL === CLOUD_SOURCEGRAPH_URL
                 }
                 showSourcegraphCloudAlert={showSourcegraphCloudAlert}
-                permissionAlert={permissionAlert}
                 currentHost={currentTabStatus?.status.host}
                 requestPermissionsHandler={currentTabStatus?.handler}
             />

@@ -6,9 +6,9 @@ import * as GQL from '@sourcegraph/shared/src/graphql/schema'
 
 import { background } from '../../browser-extension/web-extension-api/runtime'
 import { observeStorageKey, storage } from '../../browser-extension/web-extension-api/storage'
-import { SyncStorageItems, SgURL } from '../../browser-extension/web-extension-api/types'
 
-export const DEFAULT_SOURCEGRAPH_URL = 'https://sourcegraph.com'
+export const CLOUD_SOURCEGRAPH_URL = 'https://sourcegraph.com'
+
 const QUERY = gql`
     query ResolveRawRepoName($repoName: String!) {
         repository(name: $repoName) {
@@ -31,52 +31,39 @@ const checkRepoCloned = (sourcegraphURL: string, repoName: string): Observable<b
         map(({ repository }) => !!repository?.mirrorInfo?.cloned)
     )
 
-const DEFAULT_URLS = [{ url: DEFAULT_SOURCEGRAPH_URL }, { url: '', disabled: true }] // TODO: add second url placeholder
-const isEnabled = ({ disabled }: SgURL): boolean => !disabled
-
 export const SourcegraphURL = (() => {
-    const sgURLs = observeStorageKey('sync', 'sgURLs')
-
-    const LastURLSubject = new BehaviorSubject<string | undefined>(undefined)
-    const SgURLsSubject = new BehaviorSubject<SyncStorageItems['sgURLs']>([])
+    const selfHostedSourcegraphURL = new BehaviorSubject<string | undefined>(undefined)
+    const currentSourcegraphURL = new BehaviorSubject<string>(CLOUD_SOURCEGRAPH_URL)
 
     // eslint-disable-next-line rxjs/no-ignored-subscription
-    sgURLs.pipe(map(URLs => (URLs?.length ? URLs : DEFAULT_URLS))).subscribe(SgURLsSubject)
+    observeStorageKey('sync', 'sourcegraphURL').subscribe(selfHostedSourcegraphURL)
 
-    sgURLs
-        .pipe(
-            tap(URLs => console.log(URLs)),
-            map(URLs => URLs?.find(isEnabled)?.url)
-        )
-        // eslint-disable-next-line rxjs/no-ignored-subscription
-        .subscribe(LastURLSubject)
+    const getAllURLs = (): string[] =>
+        [CLOUD_SOURCEGRAPH_URL, selfHostedSourcegraphURL.value].filter(Boolean) as string[]
 
-    const isValid = (url: string): boolean => !!SgURLsSubject?.value.find(item => item.url === url && !item.disabled)
+    const isValid = (url: string): boolean => getAllURLs().includes(url)
 
-    const determineSgURL = async (rawRepoName: string): Promise<string | undefined> => {
-        const { repoToSgURL = {} } = await storage.sync.get('repoToSgURL')
+    const determineSourcegraphURL = async (rawRepoName: string): Promise<string | undefined> => {
+        const { cache = {} } = await storage.sync.get('cache')
 
-        const cachedURLForRepoName = repoToSgURL[rawRepoName]
-        if (cachedURLForRepoName && isValid(cachedURLForRepoName)) {
-            return cachedURLForRepoName
-        }
-
-        const URLs = SgURLsSubject?.value.filter(isEnabled).map(({ url }) => url)
-        if (!URLs?.length) {
-            return Promise.resolve(undefined)
+        const cachedSourcegraphURL = cache[rawRepoName]
+        if (cachedSourcegraphURL && isValid(cachedSourcegraphURL)) {
+            return cachedSourcegraphURL
         }
 
         return merge(
-            ...URLs.map(sgURL => checkRepoCloned(sgURL, rawRepoName).pipe(map(isCloned => ({ isCloned, sgURL }))))
+            ...getAllURLs().map(url =>
+                checkRepoCloned(url, rawRepoName).pipe(map(isCloned => [isCloned, url] as [boolean, string]))
+            )
         )
             .pipe(
-                first(item => item.isCloned),
-                map(({ sgURL }) => sgURL),
+                first(([isCloned]) => isCloned),
+                map(([, url]) => url),
                 defaultIfEmpty<string | undefined>(undefined),
-                tap(sgURL => {
-                    if (sgURL) {
-                        repoToSgURL[rawRepoName] = sgURL
-                        storage.sync.set({ repoToSgURL }).catch(console.error)
+                tap(url => {
+                    if (url) {
+                        cache[rawRepoName] = url
+                        storage.sync.set({ cache }).catch(console.error)
                     }
                 })
             )
@@ -84,28 +71,37 @@ export const SourcegraphURL = (() => {
     }
 
     return {
-        URLs: SgURLsSubject.asObservable(),
+        /**
+         * Returns currently used Sourcegraph URL
+         */
         observe: (isExtension: boolean = true): Observable<string> => {
             if (!isExtension) {
                 return of(
-                    window.SOURCEGRAPH_URL || window.localStorage.getItem('SOURCEGRAPH_URL') || DEFAULT_SOURCEGRAPH_URL
+                    window.SOURCEGRAPH_URL || window.localStorage.getItem('SOURCEGRAPH_URL') || CLOUD_SOURCEGRAPH_URL
                 )
             }
 
-            return LastURLSubject.asObservable().pipe(
-                distinctUntilChanged(),
-                tap(currentURL => console.log('currentURL=', currentURL))
-            )
+            return currentSourcegraphURL.asObservable().pipe(distinctUntilChanged())
         },
+        /**
+         * Updates current used Sourcegraph URL based on the current rawRepoName
+         */
         use: async (rawRepoName: string): Promise<void> => {
-            const sgURL = await determineSgURL(rawRepoName)
-            if (!sgURL) {
+            const sourcegraphURL = await determineSourcegraphURL(rawRepoName)
+            if (!sourcegraphURL) {
                 console.error(`Couldn't detect sourcegraphURL for the ${rawRepoName}`)
                 return
             }
 
-            LastURLSubject.next(sgURL)
+            currentSourcegraphURL.next(sourcegraphURL)
         },
-        update: (sgURLs: SyncStorageItems['sgURLs']): Promise<void> => storage.sync.set({ sgURLs }),
+        /**
+         * Get self-hosted Sourcegraph URL
+         */
+        get: () => selfHostedSourcegraphURL.asObservable(),
+        /**
+         * Set self-hosted Sourcegraph URL
+         */
+        set: (sourcegraphURL?: string): Promise<void> => storage.sync.set({ sourcegraphURL }),
     }
 })()
