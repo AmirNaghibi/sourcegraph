@@ -6,6 +6,7 @@ import * as GQL from '@sourcegraph/shared/src/graphql/schema'
 
 import { background } from '../../browser-extension/web-extension-api/runtime'
 import { observeStorageKey, storage } from '../../browser-extension/web-extension-api/storage'
+import { SyncStorageItems } from '../../browser-extension/web-extension-api/types'
 
 export const CLOUD_SOURCEGRAPH_URL = 'https://sourcegraph.com'
 
@@ -18,7 +19,6 @@ const QUERY = gql`
         }
     }
 `
-// TODO: show notification if not signed in
 const checkRepoCloned = (sourcegraphURL: string, repoName: string): Observable<boolean> =>
     from(
         background.requestGraphQL<GQL.IQuery>({
@@ -34,7 +34,7 @@ const checkRepoCloned = (sourcegraphURL: string, repoName: string): Observable<b
 export const SourcegraphURL = (() => {
     const selfHostedSourcegraphURL = new BehaviorSubject<string | undefined>(undefined)
     const currentSourcegraphURL = new BehaviorSubject<string>(CLOUD_SOURCEGRAPH_URL)
-    const blocklist = new BehaviorSubject<string | null | undefined>(null)
+    const blocklist = new BehaviorSubject<SyncStorageItems['blocklist'] | undefined>(undefined)
 
     // eslint-disable-next-line rxjs/no-ignored-subscription
     observeStorageKey('sync', 'sourcegraphURL').subscribe(selfHostedSourcegraphURL)
@@ -107,6 +107,6 @@ export const SourcegraphURL = (() => {
          */
         setSelfHostedSourcegraphURL: (sourcegraphURL?: string): Promise<void> => storage.sync.set({ sourcegraphURL }),
         getBlocklist: () => blocklist.asObservable(),
-        setBlocklist: (blocklist?: string | null): Promise<void> => storage.sync.set({ blocklist }),
+        setBlocklist: (blocklist: SyncStorageItems['blocklist']): Promise<void> => storage.sync.set({ blocklist }),
     }
 })()

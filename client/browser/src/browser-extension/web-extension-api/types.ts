@@ -55,7 +55,10 @@ interface SourcegraphURL {
     /**
      * rawRepoNames which are blocked to use against Cloud Sourcegraph URL
      */
-    blocklist: string
+    blocklist: {
+        enabled: boolean
+        content: string
+    }
 }
 
 export interface SyncStorageItems extends SourcegraphURL {

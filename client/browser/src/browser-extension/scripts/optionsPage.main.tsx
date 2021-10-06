@@ -29,7 +29,9 @@ import {
 } from '../../shared/util/optionFlags'
 import { assertEnvironment } from '../environmentAssertion'
 import { KnownCodeHost, knownCodeHosts } from '../knownCodeHosts'
-import { OptionsPage, URL_AUTH_ERROR, URL_FETCH_ERROR } from '../options-menu/OptionsPage'
+import { URL_AUTH_ERROR, URL_FETCH_ERROR } from '../options-menu/constants'
+import { OptionsPage } from '../options-menu/OptionsPage'
+import { OptionsPageContext } from '../options-menu/OptionsPage.context'
 import { ThemeWrapper } from '../ThemeWrapper'
 import { background } from '../web-extension-api/runtime'
 import { observeStorageKey, storage } from '../web-extension-api/storage'
@@ -128,7 +130,7 @@ function handleToggleActivated(isActivated: boolean): void {
     storage.sync.set({ disableExtension: !isActivated }).catch(console.error)
 }
 
-function handleChangeOptionFlag(key: string, value: boolean): void {
+function onChangeOptionFlag(key: string, value: boolean): void {
     if (isOptionFlagKey(key)) {
         featureFlags.set(key, value).catch(noop)
     }
@@ -138,8 +140,8 @@ function handleSelfHostedSourcegraphURLChange(sourcegraphURL?: string): void {
     SourcegraphURL.setSelfHostedSourcegraphURL(sourcegraphURL).catch(console.error)
 }
 
-function handleBlocklistChange(blocklist?: string): void {
-    SourcegraphURL.setBlocklist(blocklist).catch(console.error)
+function onBlocklistChange(enabled: boolean, content: string): void {
+    SourcegraphURL.setBlocklist({ enabled, content }).catch(console.error)
 }
 
 function buildRequestPermissionsHandler({ protocol, host }: TabStatus) {
@@ -156,7 +158,7 @@ const Options: React.FunctionComponent = () => {
     const selfHostedSourcegraphURL = useObservable(SourcegraphURL.getSelfHostedSourcegraphURL())
     const blocklist = useObservable(SourcegraphURL.getBlocklist())
     const isActivated = useObservable(observingIsActivated)
-    const optionFlagsWithValues = useObservable(observingOptionFlagsWithValues) || []
+    const optionFlags = useObservable(observingOptionFlagsWithValues) || []
     const [currentTabStatus, setCurrentTabStatus] = useState<
         { status: TabStatus; handler: React.MouseEventHandler } | undefined
     >()
@@ -186,25 +188,30 @@ const Options: React.FunctionComponent = () => {
 
     return (
         <ThemeWrapper>
-            <OptionsPage
-                isFullPage={isFullPage}
-                selfHostedSourcegraphURL={selfHostedSourcegraphURL}
-                version={version}
-                blocklist={blocklist}
-                validateSourcegraphUrl={validateSourcegraphUrl}
-                permissionAlert={permissionAlert}
-                onSelfHostedSourcegraphURLChange={handleSelfHostedSourcegraphURLChange}
-                onBlocklistChange={handleBlocklistChange}
-                isActivated={!!isActivated}
-                onToggleActivated={handleToggleActivated}
-                optionFlags={optionFlagsWithValues}
-                onChangeOptionFlag={handleChangeOptionFlag}
-                showPrivateRepositoryAlert={
-                    currentTabStatus?.status.hasPrivateCloudError && sourcegraphURL === CLOUD_SOURCEGRAPH_URL
-                }
-                showSourcegraphCloudAlert={showSourcegraphCloudAlert}
-                requestPermissionsHandler={currentTabStatus?.handler}
-            />
+            <OptionsPageContext.Provider
+                value={{
+                    blocklist,
+                    onBlocklistChange,
+                    optionFlags,
+                    onChangeOptionFlag,
+                }}
+            >
+                <OptionsPage
+                    isFullPage={isFullPage}
+                    selfHostedSourcegraphURL={selfHostedSourcegraphURL}
+                    version={version}
+                    validateSourcegraphUrl={validateSourcegraphUrl}
+                    permissionAlert={permissionAlert}
+                    onSelfHostedSourcegraphURLChange={handleSelfHostedSourcegraphURLChange}
+                    isActivated={!!isActivated}
+                    onToggleActivated={handleToggleActivated}
+                    showPrivateRepositoryAlert={
+                        currentTabStatus?.status.hasPrivateCloudError && sourcegraphURL === CLOUD_SOURCEGRAPH_URL
+                    }
+                    showSourcegraphCloudAlert={showSourcegraphCloudAlert}
+                    requestPermissionsHandler={currentTabStatus?.handler}
+                />
+            </OptionsPageContext.Provider>
         </ThemeWrapper>
     )
 }

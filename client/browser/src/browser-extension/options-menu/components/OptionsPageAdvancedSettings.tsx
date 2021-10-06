@@ -1,4 +1,6 @@
-import React from 'react'
+import React, { useCallback, useContext, useState } from 'react'
+
+import { OptionsPageContext } from '../OptionsPage.context'
 
 import { CodeTextArea } from './CodeTextArea'
 import { InfoText } from './InfoText'
@@ -19,20 +21,15 @@ const Checkbox: React.FC<{ value: boolean; onChange: (value: boolean) => void }>
     </div>
 )
 
-interface OptionsPageAdvancedSettingsProps {
-    optionFlags: { key: string; label: string; value: boolean }[]
-    onChangeOptionFlag: (key: string, value: boolean) => void
-    blocklist?: string | null
-    onBlocklistChange: (value?: string | null) => void
-}
-
-export const OptionsPageAdvancedSettings: React.FunctionComponent<OptionsPageAdvancedSettingsProps> = ({
-    optionFlags,
-    onChangeOptionFlag,
-    blocklist,
-    onBlocklistChange,
-}) => {
-    const isBlocklistEnabled = typeof blocklist === 'string'
+export const OptionsPageAdvancedSettings: React.FC = () => {
+    const { optionFlags, onChangeOptionFlag, blocklist, onBlocklistChange } = useContext(OptionsPageContext)
+    const [isBlocklistEnabled, setIsBlocklistEnabled] = useState(!!blocklist?.enabled)
+    const handleTextAreaChange = useCallback(
+        (content: string) => {
+            onBlocklistChange(isBlocklistEnabled, content)
+        },
+        [isBlocklistEnabled, onBlocklistChange]
+    )
     return (
         <section className="mt-3 mb-2">
             {optionFlags.map(({ label, key, value }) => (
@@ -40,7 +37,7 @@ export const OptionsPageAdvancedSettings: React.FunctionComponent<OptionsPageAdv
                     {label}
                 </Checkbox>
             ))}
-            <Checkbox value={isBlocklistEnabled} onChange={value => onBlocklistChange(value ? '' : null)}>
+            <Checkbox value={isBlocklistEnabled} onChange={setIsBlocklistEnabled}>
                 Sourcegraph cloud blocklist
             </Checkbox>
             {isBlocklistEnabled && (
@@ -50,10 +47,10 @@ export const OptionsPageAdvancedSettings: React.FunctionComponent<OptionsPageAdv
                         here.
                     </InfoText>
                     <CodeTextArea
-                        value={blocklist ?? ''}
-                        onChange={onBlocklistChange}
                         rows={4}
                         placeholder={PLACEHOLDER}
+                        value={blocklist?.content ?? ''}
+                        onChange={handleTextAreaChange}
                     />
                 </>
             )}
