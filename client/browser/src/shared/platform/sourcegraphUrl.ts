@@ -18,7 +18,7 @@ const QUERY = gql`
         }
     }
 `
-const checkRepoCloned = (sourcegraphURL: string, repoName: string): Observable<boolean> =>
+const isRepoCloned = (sourcegraphURL: string, repoName: string): Observable<boolean> =>
     from(
         background.requestGraphQL<GQL.IQuery>({
             request: QUERY,
@@ -40,42 +40,31 @@ export const SourcegraphURL = (() => {
     // eslint-disable-next-line rxjs/no-ignored-subscription
     observeStorageKey('sync', 'blocklist').subscribe(blocklist)
 
-    const getAllURLs = (rawRepoName?: string): string[] =>
-        [rawRepoName && isBlocked(rawRepoName) ? '' : CLOUD_SOURCEGRAPH_URL, selfHostedSourcegraphURL.value].filter(
-            Boolean
-        ) as string[]
-
-    const isValid = (rawRepoName: string, url: string): boolean => {
-        if (!getAllURLs().includes(url)) {
-            return false
+    /* Checks if a given pair of (sgURL, rawRepoName) is not in blocklist */
+    const isInBlocklist = (sgURL: string, rawRepoName: string): boolean => {
+        if (!isCloudSourcegraphUrl(sgURL)) {
+            return true
         }
-        return !isCloudSourcegraphUrl(url) || !isBlocked(rawRepoName)
-    }
-
-    const isBlocked = (rawRepoName: string): boolean => {
         const { enabled, content = '' } = blocklist.value ?? {}
-        if (!enabled) {
-            return false
-        }
-        const repoPatterns = content.split(/\n+/)
-        const match = repoPatterns.find(pattern => new RegExp(pattern).test(rawRepoName))
-
-        console.log('isBlocked =', !!match, rawRepoName)
-        return !!match
+        return !enabled || content.split(/\n+/).some(pattern => new RegExp(pattern).test(rawRepoName))
     }
 
+    /**
+     * Determines sourcegraph instance URL where a given rawRepoName exists.
+     * Uses cache as well as network requests
+     */
     const determineSourcegraphURL = async (rawRepoName: string): Promise<string | undefined> => {
         const { cache = {} } = await storage.sync.get('cache')
-        console.log('determineSourcegraphURL', rawRepoName)
 
-        const cachedSourcegraphURL = cache[rawRepoName]
-        if (cachedSourcegraphURL && isValid(rawRepoName, cachedSourcegraphURL)) {
-            return cachedSourcegraphURL
+        const URLs = [CLOUD_SOURCEGRAPH_URL, selfHostedSourcegraphURL.value].filter(Boolean) as string[]
+        const cachedURL = cache[rawRepoName]
+        if (cachedURL && URLs.includes(cachedURL) && !isInBlocklist(cachedURL, rawRepoName)) {
+            return cachedURL
         }
 
         return merge(
-            ...getAllURLs(rawRepoName).map(url =>
-                checkRepoCloned(url, rawRepoName).pipe(map(isCloned => [isCloned, url] as [boolean, string]))
+            ...URLs.filter(url => isInBlocklist(url, rawRepoName)).map(url =>
+                isRepoCloned(url, rawRepoName).pipe(map(isCloned => [isCloned, url] as [boolean, string]))
             )
         )
             .pipe(
@@ -93,9 +82,7 @@ export const SourcegraphURL = (() => {
     }
 
     return {
-        /**
-         * Returns currently used Sourcegraph URL
-         */
+        /*  Returns currently used Sourcegraph URL */
         observe: (isExtension: boolean = true): Observable<string> => {
             if (!isExtension) {
                 return of(
@@ -105,25 +92,18 @@ export const SourcegraphURL = (() => {
 
             return currentSourcegraphURL.asObservable().pipe(distinctUntilChanged())
         },
-        /**
-         * Updates current used Sourcegraph URL based on the current rawRepoName
-         */
+        /* Updates current used Sourcegraph URL based on the current rawRepoName */
         use: async (rawRepoName: string): Promise<void> => {
             const sourcegraphURL = await determineSourcegraphURL(rawRepoName)
             if (!sourcegraphURL) {
-                console.error(`Couldn't detect sourcegraphURL for the ${rawRepoName}`)
-                return
+                throw new Error(`Couldn't detect sourcegraphURL for the ${rawRepoName}`)
             }
 
             currentSourcegraphURL.next(sourcegraphURL)
         },
-        /**
-         * Get self-hosted Sourcegraph URL
-         */
+        /* Get self-hosted Sourcegraph URL */
         getSelfHostedSourcegraphURL: () => selfHostedSourcegraphURL.asObservable(),
-        /**
-         * Set self-hosted Sourcegraph URL
-         */
+        /** Set self-hosted Sourcegraph URL */
         setSelfHostedSourcegraphURL: (sourcegraphURL?: string): Promise<void> => storage.sync.set({ sourcegraphURL }),
         getBlocklist: () => blocklist.asObservable(),
         setBlocklist: (blocklist: SyncStorageItems['blocklist']): Promise<void> => storage.sync.set({ blocklist }),

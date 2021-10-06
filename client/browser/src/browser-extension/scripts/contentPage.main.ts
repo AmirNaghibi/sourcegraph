@@ -1,20 +1,18 @@
 import '../../shared/polyfills'
 
 import { fromEvent, Subscription } from 'rxjs'
-import { first, filter, mergeMap } from 'rxjs/operators'
+import { first } from 'rxjs/operators'
 
 import { setLinkComponent, AnchorLink } from '@sourcegraph/shared/src/components/Link'
 
 import { determineCodeHost } from '../../shared/code-hosts/shared/codeHost'
 import { injectCodeIntelligence } from '../../shared/code-hosts/shared/inject'
+import { logger } from '../../shared/code-hosts/shared/util/logger'
 import {
-    checkIsSourcegraph,
     EXTENSION_MARKER_ID,
     injectExtensionMarker,
     NATIVE_INTEGRATION_ACTIVATED,
-    signalBrowserExtensionInstalled,
 } from '../../shared/code-hosts/sourcegraph/inject'
-import { SourcegraphURL } from '../../shared/platform/sourcegraphUrl'
 import { initSentry } from '../../shared/sentry'
 import { CLOUD_SOURCEGRAPH_URL, getAssetsURL } from '../../shared/util/context'
 import { featureFlags } from '../../shared/util/featureFlags'
@@ -34,7 +32,7 @@ setLinkComponent(AnchorLink)
  * Main entry point into browser extension.
  */
 async function main(): Promise<void> {
-    console.log('Sourcegraph browser extension is running')
+    logger.info('Browser extension is running')
 
     // Make sure DOM is fully loaded
     if (document.readyState !== 'complete' && document.readyState !== 'interactive') {
@@ -49,7 +47,7 @@ async function main(): Promise<void> {
     // If the native integration was activated before the content script, we can
     // synchronously check for the presence of the extension marker.
     if (document.querySelector(`#${EXTENSION_MARKER_ID}`) !== null) {
-        console.log('Sourcegraph native integration is already running')
+        logger.info('Native integration is already running')
         return
     }
     // If the extension marker isn't present, inject it and listen for a custom event sent by the native
@@ -59,68 +57,42 @@ async function main(): Promise<void> {
         .pipe(first())
         .toPromise()
 
-    let lastSubscription: Subscription | undefined
-    const subscription = SourcegraphURL.observe()
-        .pipe(
-            filter(sourcegraphURL => {
-                const isSourcegraphServer = checkIsSourcegraph(sourcegraphURL)
-                if (isSourcegraphServer) {
-                    signalBrowserExtensionInstalled()
+    subscriptions.add(
+        await injectCodeIntelligence(getAssetsURL(CLOUD_SOURCEGRAPH_URL), true, async function onCodeHostFound() {
+            // Add style sheet and wait for it to load to avoid rendering unstyled elements (which causes an
+            // annoying flash/jitter when the stylesheet loads shortly thereafter).
+            const styleSheet = (() => {
+                let styleSheet = document.querySelector<HTMLLinkElement>('#ext-style-sheet')
+                // If does not exist, create
+                if (!styleSheet) {
+                    styleSheet = document.createElement('link')
+                    styleSheet.id = 'ext-style-sheet'
+                    styleSheet.rel = 'stylesheet'
+                    styleSheet.type = 'text/css'
+                    styleSheet.href = browser.extension.getURL('css/style.bundle.css')
                 }
-
-                return !isSourcegraphServer
-            }),
-            // TODO: explain why we need mergeMap instead of switchMap
-            mergeMap(sourcegraphURL => {
-                console.log(`Attaching code intelligence [sourcegraphURL=${sourcegraphURL}]`)
-                return injectCodeIntelligence(
-                    { sourcegraphURL, assetsURL: getAssetsURL(CLOUD_SOURCEGRAPH_URL) },
-                    true,
-                    async function onCodeHostFound() {
-                        console.log('onCodeHostFound')
-
-                        // Add style sheet and wait for it to load to avoid rendering unstyled elements (which causes an
-                        // annoying flash/jitter when the stylesheet loads shortly thereafter).
-                        const styleSheet = (() => {
-                            let styleSheet = document.querySelector<HTMLLinkElement>('#ext-style-sheet')
-                            // If does not exist, create
-                            if (!styleSheet) {
-                                styleSheet = document.createElement('link')
-                                styleSheet.id = 'ext-style-sheet'
-                                styleSheet.rel = 'stylesheet'
-                                styleSheet.type = 'text/css'
-                                styleSheet.href = browser.extension.getURL('css/style.bundle.css')
-                            }
-                            return styleSheet
-                        })()
-                        // If not loaded yet, wait for it to load
-                        if (!styleSheet.sheet) {
-                            await new Promise(resolve => {
-                                styleSheet.addEventListener('load', resolve, { once: true })
-                                // If not appended yet, append to <head>
-                                if (!styleSheet.parentNode) {
-                                    document.head.append(styleSheet)
-                                }
-                            })
-                        }
+                return styleSheet
+            })()
+            // If not loaded yet, wait for it to load
+            if (!styleSheet.sheet) {
+                await new Promise(resolve => {
+                    styleSheet.addEventListener('load', resolve, { once: true })
+                    // If not appended yet, append to <head>
+                    if (!styleSheet.parentNode) {
+                        document.head.append(styleSheet)
                     }
-                )
-            })
-        )
-        .subscribe(subscription => {
-            if (lastSubscription) {
-                console.log('Detaching code intelligence')
-                lastSubscription.unsubscribe()
+                })
             }
-            lastSubscription = subscription
+        }).catch(error => {
+            console.error('Error happened while injecting code intelligence', error)
+            // TODO: trigger not working event
         })
-
-    subscriptions.add(subscription)
+    )
 
     // Clean up susbscription if the native integration gets activated
     // later in the lifetime of the content script.
     await nativeIntegrationActivationEventReceived
-    console.log('Native integration activation event received')
+    logger.info('Native integration activation event received')
     subscriptions.unsubscribe()
 }
 

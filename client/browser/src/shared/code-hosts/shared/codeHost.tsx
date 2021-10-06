@@ -113,6 +113,7 @@ import {
     registerNativeTooltipContributions,
 } from './nativeTooltips'
 import { resolveRepoNamesForDiffOrFileInfo, defaultRevisionToCommitID } from './util/fileInfo'
+import { logger } from './util/logger'
 import { ViewOnSourcegraphButtonClassProps, ViewOnSourcegraphButton } from './ViewOnSourcegraphButton'
 import { delayUntilIntersecting, trackViews, ViewResolver } from './views'
 
@@ -1287,33 +1288,7 @@ const CODE_HOSTS: CodeHost[] = [
     gerritCodeHost,
 ]
 
-const CLOUD_CODE_HOST_HOSTS = ['github.com', 'gitlab.com']
-
-export const determineCodeHost = (sourcegraphURL?: string): CodeHost | undefined => {
-    const codeHost = CODE_HOSTS.find(codeHost => codeHost.check())
-
-    if (!codeHost) {
-        return undefined
-    }
-
-    // Prevent repo lookups for code hosts that we know cannot have repositories
-    // cloned on sourcegraph.com. Repo lookups trigger cloning, which will
-    // inevitably fail in this case.
-    if (sourcegraphURL === CLOUD_SOURCEGRAPH_URL) {
-        const { hostname } = new URL(location.href)
-        const validCodeHost = CLOUD_CODE_HOST_HOSTS.some(cloudHost => cloudHost === hostname)
-        if (!validCodeHost) {
-            console.log(
-                `Sourcegraph code host integration: stopped initialization since ${hostname} is not a supported code host when Sourcegraph URL is ${CLOUD_SOURCEGRAPH_URL}.\n List of supported code hosts on ${CLOUD_SOURCEGRAPH_URL}: ${CLOUD_CODE_HOST_HOSTS.join(
-                    ', '
-                )}`
-            )
-            return undefined
-        }
-    }
-
-    return codeHost
-}
+export const determineCodeHost = (): CodeHost | undefined => CODE_HOSTS.find(codeHost => codeHost.check())
 
 export function injectCodeIntelligenceToCodeHost(
     mutations: Observable<MutationRecordLike[]>,
@@ -1367,7 +1342,7 @@ export function injectCodeIntelligenceToCodeHost(
                 if (codeHostSubscription) {
                     codeHostSubscription.unsubscribe()
                 }
-                console.log('Browser extension is disabled')
+                logger.info('Browser extension is disabled')
             } else {
                 codeHostSubscription = handleCodeHost({
                     mutations,
@@ -1382,7 +1357,7 @@ export function injectCodeIntelligenceToCodeHost(
                     background,
                 })
                 subscriptions.add(codeHostSubscription)
-                console.log(`${isExtension ? 'Browser extension' : 'Native integration'} is enabled`)
+                logger.info(`${isExtension ? 'Browser extension' : 'Native integration'} is enabled`)
             }
         })
     )
