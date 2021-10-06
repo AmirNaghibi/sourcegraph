@@ -88,10 +88,10 @@ import { toTextDocumentPositionParameters } from '../../backend/extension-api-co
 import { CodeViewToolbar, CodeViewToolbarClassProps } from '../../components/CodeViewToolbar'
 import { isExtension, isInPage } from '../../context'
 import { SourcegraphIntegrationURLs, BrowserPlatformContext } from '../../platform/context'
-import { SourcegraphURL } from '../../platform/sourcegraphUrl'
+import { SourcegraphURL, CLOUD_SOURCEGRAPH_URL } from '../../platform/sourcegraphUrl'
 import { resolveRevision, retryWhenCloneInProgressError } from '../../repo/backend'
 import { EventLogger, ConditionalTelemetryService } from '../../tracking/eventLogger'
-import { DEFAULT_SOURCEGRAPH_URL, getPlatformName, observeSourcegraphURL } from '../../util/context'
+import { getPlatformName } from '../../util/context'
 import { MutationRecordLike, querySelectorOrSelf } from '../../util/dom'
 import { featureFlags } from '../../util/featureFlags'
 import { shouldOverrideSendTelemetry, observeOptionFlag } from '../../util/optionFlags'
@@ -678,7 +678,7 @@ export function handleCodeHost({
     const checkPrivateCloudError = (error: any): boolean =>
         !!(
             isRepoNotFoundErrorLike(error) &&
-            sourcegraphURL === DEFAULT_SOURCEGRAPH_URL &&
+            sourcegraphURL === CLOUD_SOURCEGRAPH_URL &&
             codeHost.getContext?.().privateRepository
         )
 
@@ -1299,12 +1299,12 @@ export const determineCodeHost = (sourcegraphURL?: string): CodeHost | undefined
     // Prevent repo lookups for code hosts that we know cannot have repositories
     // cloned on sourcegraph.com. Repo lookups trigger cloning, which will
     // inevitably fail in this case.
-    if (sourcegraphURL === DEFAULT_SOURCEGRAPH_URL) {
+    if (sourcegraphURL === CLOUD_SOURCEGRAPH_URL) {
         const { hostname } = new URL(location.href)
         const validCodeHost = CLOUD_CODE_HOST_HOSTS.some(cloudHost => cloudHost === hostname)
         if (!validCodeHost) {
             console.log(
-                `Sourcegraph code host integration: stopped initialization since ${hostname} is not a supported code host when Sourcegraph URL is ${DEFAULT_SOURCEGRAPH_URL}.\n List of supported code hosts on ${DEFAULT_SOURCEGRAPH_URL}: ${CLOUD_CODE_HOST_HOSTS.join(
+                `Sourcegraph code host integration: stopped initialization since ${hostname} is not a supported code host when Sourcegraph URL is ${CLOUD_SOURCEGRAPH_URL}.\n List of supported code hosts on ${CLOUD_SOURCEGRAPH_URL}: ${CLOUD_CODE_HOST_HOSTS.join(
                     ', '
                 )}`
             )
@@ -1331,7 +1331,7 @@ export function injectCodeIntelligenceToCodeHost(
     const { requestGraphQL } = platformContext
     subscriptions.add(extensionsController)
 
-    const overrideSendTelemetry = observeSourcegraphURL(isExtension).pipe(
+    const overrideSendTelemetry = SourcegraphURL.observe(isExtension).pipe(
         map(sourcegraphUrl => shouldOverrideSendTelemetry(isFirefox(), isExtension, sourcegraphUrl))
     )
 

@@ -14,9 +14,9 @@ import {
     NATIVE_INTEGRATION_ACTIVATED,
     signalBrowserExtensionInstalled,
 } from '../../shared/code-hosts/sourcegraph/inject'
-import { SourcegraphURL } from '../../shared/platform/sourcegraphUrl'
+import { SourcegraphURL, CLOUD_SOURCEGRAPH_URL } from '../../shared/platform/sourcegraphUrl'
 import { initSentry } from '../../shared/sentry'
-import { DEFAULT_SOURCEGRAPH_URL, getAssetsURL } from '../../shared/util/context'
+import { getAssetsURL } from '../../shared/util/context'
 import { featureFlags } from '../../shared/util/featureFlags'
 import { assertEnvironment } from '../environmentAssertion'
 
@@ -79,7 +79,7 @@ async function main(): Promise<void> {
                 }
                 console.log(`Attaching code intelligence [sourcegraphURL=${sourcegraphURL}]`)
                 return injectCodeIntelligence(
-                    { sourcegraphURL, assetsURL: getAssetsURL(DEFAULT_SOURCEGRAPH_URL) },
+                    { sourcegraphURL, assetsURL: getAssetsURL(CLOUD_SOURCEGRAPH_URL) },
                     IS_EXTENSION,
                     async function onCodeHostFound() {
                         console.log('onCodeHostFound')

@@ -10,6 +10,10 @@ import { SyncStorageItems } from '../../browser-extension/web-extension-api/type
 
 export const CLOUD_SOURCEGRAPH_URL = 'https://sourcegraph.com'
 
+export function isCloudSourcegraphUrl(url: string): boolean {
+    return url.replace(/\/$/, '') === CLOUD_SOURCEGRAPH_URL
+}
+
 const QUERY = gql`
     query ResolveRawRepoName($repoName: String!) {
         repository(name: $repoName) {

@@ -3,8 +3,8 @@ import * as Sentry from '@sentry/browser'
 import { once } from 'lodash'
 
 import { isInPage } from '../context'
-import { SourcegraphURL } from '../platform/sourcegraphUrl'
-import { DEFAULT_SOURCEGRAPH_URL, getExtensionVersion } from '../util/context'
+import { CLOUD_SOURCEGRAPH_URL, SourcegraphURL } from '../platform/sourcegraphUrl'
+import { getExtensionVersion } from '../util/context'
 import { observeOptionFlag } from '../util/optionFlags'
 
 const IS_EXTENSION = true
@@ -60,7 +60,7 @@ export function initSentry(script: 'content' | 'options' | 'background', codeHos
 
     SourcegraphURL.observe(IS_EXTENSION).subscribe(url => {
         Sentry.configureScope(scope => {
-            scope.setTag('using_dot_com', url === DEFAULT_SOURCEGRAPH_URL ? 'true' : 'false')
+            scope.setTag('using_dot_com', url === CLOUD_SOURCEGRAPH_URL ? 'true' : 'false')
         })
     })
 }

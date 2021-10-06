@@ -1,28 +1,4 @@
-import { Observable, of } from 'rxjs'
-import { map } from 'rxjs/operators'
-
 import { isFirefox } from '@sourcegraph/shared/src/util/browserDetection'
-
-import { observeStorageKey } from '../../browser-extension/web-extension-api/storage'
-
-export const DEFAULT_SOURCEGRAPH_URL = 'https://sourcegraph.com'
-
-export function observeSourcegraphURL(isExtension: boolean, rawRepoName?: string): Observable<string> {
-    if (isExtension) {
-        /**
-         * Steps: (need repoName)
-            0. if no rawRepoName use just first in the list?
-            1. search for repo to SG URL association
-            2. if not check using SG URLs list and return first working for the given repoName
-                - Save association
-            3. if not just default last one, I guess?
-         */
-        return observeStorageKey('sync', 'sourcegraphURL').pipe(
-            map(sourcegraphURL => sourcegraphURL || DEFAULT_SOURCEGRAPH_URL)
-        )
-    }
-    return of(window.SOURCEGRAPH_URL || window.localStorage.getItem('SOURCEGRAPH_URL') || DEFAULT_SOURCEGRAPH_URL)
-}
 
 /**
  * Returns the base URL where assets will be fetched from
@@ -71,8 +47,4 @@ function isSafari(): boolean {
     // Chrome's user agent contains "Safari" as well as "Chrome", so for Safari
     // we must check that it does not include "Chrome"
     return window.navigator.userAgent.includes('Safari') && !window.navigator.userAgent.includes('Chrome')
-}
-
-export function isDefaultSourcegraphUrl(url: string): boolean {
-    return url.replace(/\/$/, '') === DEFAULT_SOURCEGRAPH_URL
 }
