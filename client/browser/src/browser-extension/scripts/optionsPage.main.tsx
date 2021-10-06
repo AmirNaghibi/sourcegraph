@@ -15,9 +15,9 @@ import { useObservable } from '@sourcegraph/shared/src/util/useObservable'
 
 import { fetchSite } from '../../shared/backend/server'
 import { isExtension } from '../../shared/context'
-import { CLOUD_SOURCEGRAPH_URL, SourcegraphURL } from '../../shared/platform/sourcegraphUrl'
+import { SourcegraphURL } from '../../shared/platform/sourcegraphUrl'
 import { initSentry } from '../../shared/sentry'
-import { getExtensionVersion } from '../../shared/util/context'
+import { getExtensionVersion, CLOUD_SOURCEGRAPH_URL } from '../../shared/util/context'
 import { featureFlags } from '../../shared/util/featureFlags'
 import {
     OptionFlagKey,

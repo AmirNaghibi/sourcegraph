@@ -3,7 +3,8 @@ import { map, distinctUntilChanged } from 'rxjs/operators'
 
 import { observeStorageKey } from '../../browser-extension/web-extension-api/storage'
 import { isExtension } from '../context'
-import { isCloudSourcegraphUrl } from '../platform/sourcegraphUrl'
+
+import { isCloudSourcegraphUrl } from './context'
 
 const OPTION_FLAGS_SYNC_STORAGE_KEY = 'featureFlags'
 

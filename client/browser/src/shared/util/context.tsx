@@ -1,5 +1,11 @@
 import { isFirefox } from '@sourcegraph/shared/src/util/browserDetection'
 
+export const CLOUD_SOURCEGRAPH_URL = 'https://sourcegraph.com'
+
+export function isCloudSourcegraphUrl(url: string): boolean {
+    return url.replace(/\/$/, '') === CLOUD_SOURCEGRAPH_URL
+}
+
 /**
  * Returns the base URL where assets will be fetched from
  * (CSS, extension host worker, bundle...).

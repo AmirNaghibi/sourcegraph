@@ -6,8 +6,7 @@ import { isHTTPAuthError } from '@sourcegraph/shared/src/backend/fetch'
 import { ErrorLike, isErrorLike } from '@sourcegraph/shared/src/util/errors'
 
 import { SourcegraphIconButton, SourcegraphIconButtonProps } from '../../components/SourcegraphIconButton'
-import { CLOUD_SOURCEGRAPH_URL } from '../../platform/sourcegraphUrl'
-import { getPlatformName } from '../../util/context'
+import { getPlatformName, CLOUD_SOURCEGRAPH_URL } from '../../util/context'
 
 import { CodeHostContext } from './codeHost'
 import { SignInButton } from './SignInButton'

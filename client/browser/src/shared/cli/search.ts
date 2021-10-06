@@ -10,8 +10,8 @@ import { buildSearchURLQuery } from '@sourcegraph/shared/src/util/url'
 import { SearchPatternType } from '../../graphql-operations'
 import { createSuggestionFetcher } from '../backend/search'
 import { createPlatformContext } from '../platform/context'
-import { SourcegraphURL, CLOUD_SOURCEGRAPH_URL } from '../platform/sourcegraphUrl'
-import { getAssetsURL } from '../util/context'
+import { SourcegraphURL } from '../platform/sourcegraphUrl'
+import { getAssetsURL, CLOUD_SOURCEGRAPH_URL } from '../util/context'
 
 const isURL = /^https?:\/\//
 const IS_EXTENSION = true // This feature is only supported in browser extension

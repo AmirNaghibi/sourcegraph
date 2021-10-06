@@ -1,6 +1,6 @@
 import { checkOk } from '@sourcegraph/shared/src/backend/fetch'
 
-import { CLOUD_SOURCEGRAPH_URL } from './sourcegraphUrl'
+import { CLOUD_SOURCEGRAPH_URL } from '../util/context'
 
 export async function createBlobURLForBundle(bundleURL: string): Promise<string> {
     const { origin, hostname } = new URL(bundleURL)

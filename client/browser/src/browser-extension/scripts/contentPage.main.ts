@@ -14,9 +14,9 @@ import {
     NATIVE_INTEGRATION_ACTIVATED,
     signalBrowserExtensionInstalled,
 } from '../../shared/code-hosts/sourcegraph/inject'
-import { SourcegraphURL, CLOUD_SOURCEGRAPH_URL } from '../../shared/platform/sourcegraphUrl'
+import { SourcegraphURL } from '../../shared/platform/sourcegraphUrl'
 import { initSentry } from '../../shared/sentry'
-import { getAssetsURL } from '../../shared/util/context'
+import { CLOUD_SOURCEGRAPH_URL, getAssetsURL } from '../../shared/util/context'
 import { featureFlags } from '../../shared/util/featureFlags'
 import { assertEnvironment } from '../environmentAssertion'
 

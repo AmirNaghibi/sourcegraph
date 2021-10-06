@@ -3,7 +3,7 @@ import * as GQL from '@sourcegraph/shared/src/graphql/schema'
 import { PlatformContext } from '@sourcegraph/shared/src/platform/context'
 
 import { UserEvent, EventSource } from '../../graphql-operations'
-import { CLOUD_SOURCEGRAPH_URL } from '../platform/sourcegraphUrl'
+import { CLOUD_SOURCEGRAPH_URL } from '../util/context'
 
 /**
  * Log a user action on the associated self-hosted Sourcegraph instance (allows site admins on a private

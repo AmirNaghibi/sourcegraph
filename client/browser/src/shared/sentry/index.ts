@@ -3,8 +3,7 @@ import * as Sentry from '@sentry/browser'
 import { once } from 'lodash'
 
 import { isInPage } from '../context'
-import { CLOUD_SOURCEGRAPH_URL, SourcegraphURL } from '../platform/sourcegraphUrl'
-import { getExtensionVersion } from '../util/context'
+import { getExtensionVersion, CLOUD_SOURCEGRAPH_URL } from '../util/context'
 import { observeOptionFlag } from '../util/optionFlags'
 
 const IS_EXTENSION = true

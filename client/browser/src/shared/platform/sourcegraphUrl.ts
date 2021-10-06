@@ -7,12 +7,7 @@ import * as GQL from '@sourcegraph/shared/src/graphql/schema'
 import { background } from '../../browser-extension/web-extension-api/runtime'
 import { observeStorageKey, storage } from '../../browser-extension/web-extension-api/storage'
 import { SyncStorageItems } from '../../browser-extension/web-extension-api/types'
-
-export const CLOUD_SOURCEGRAPH_URL = 'https://sourcegraph.com'
-
-export function isCloudSourcegraphUrl(url: string): boolean {
-    return url.replace(/\/$/, '') === CLOUD_SOURCEGRAPH_URL
-}
+import { CLOUD_SOURCEGRAPH_URL, isCloudSourcegraphUrl } from '../util/context'
 
 const QUERY = gql`
     query ResolveRawRepoName($repoName: String!) {
@@ -51,7 +46,6 @@ export const SourcegraphURL = (() => {
         ) as string[]
 
     const isValid = (rawRepoName: string, url: string): boolean => {
-        return false
         if (!getAllURLs().includes(url)) {
             return false
         }

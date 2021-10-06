@@ -7,7 +7,7 @@ import React, { useCallback, useState } from 'react'
 import { SourcegraphLogo } from '@sourcegraph/branded/src/components/SourcegraphLogo'
 import { Toggle } from '@sourcegraph/branded/src/components/Toggle'
 
-import { CLOUD_SOURCEGRAPH_URL } from '../../shared/platform/sourcegraphUrl'
+import { CLOUD_SOURCEGRAPH_URL } from '../../shared/util/context'
 
 import { OptionsPageAdvancedSettings } from './components/OptionsPageAdvancedSettings'
 import { SourcegraphURLInput, SourcegraphURLInputProps } from './components/SourcegraphURLInput'
