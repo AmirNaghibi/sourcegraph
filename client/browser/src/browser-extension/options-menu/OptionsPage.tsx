@@ -1,6 +1,7 @@
 import classNames from 'classnames'
 import CheckCircleOutlineIcon from 'mdi-react/CheckCircleOutlineIcon'
 import LockIcon from 'mdi-react/LockIcon'
+import OpenInNewIcon from 'mdi-react/OpenInNewIcon'
 import React, { useCallback, useState } from 'react'
 
 import { SourcegraphLogo } from '@sourcegraph/branded/src/components/SourcegraphLogo'
@@ -68,7 +69,7 @@ const PrivateRepositoryAlert: React.FunctionComponent = () => (
 const InfoSection: React.FC = () => (
     <section className="options-page__section">
         Get code intelligence tooltips while browsing and reviewing code on your code host.{' '}
-        <a href="https://docs.sourcegraph.com" {...LINK_PROPS}>
+        <a href="https://docs.sourcegraph.com/integration/browser_extension" {...LINK_PROPS}>
             Learn more
         </a>{' '}
         Learn more about the extension and compatible code hosts.
@@ -132,7 +133,9 @@ export const OptionsPage: React.FunctionComponent<OptionsPageProps> = ({
         <div className={classNames('options-page', isFullPage && 'options-page--full shadow')}>
             <section className="options-page__section">
                 <div className="d-flex justify-content-between">
-                    <SourcegraphLogo className="options-page__logo" />
+                    <a href={CLOUD_SOURCEGRAPH_URL} {...LINK_PROPS}>
+                        <SourcegraphLogo className="options-page__logo" />
+                    </a>
                     <div>
                         <Toggle
                             value={isActivated}
@@ -178,12 +181,21 @@ export const OptionsPage: React.FunctionComponent<OptionsPageProps> = ({
             {showSourcegraphCloudAlert && <SourcegraphCloudAlert />}
 
             {showPrivateRepositoryAlert && <PrivateRepositoryAlert />}
-            <section className="options-page__section">
-                <a href="https://docs.sourcegraph.com/integration/browser_extension#privacy" {...LINK_PROPS}>
+            <section className="options-page__section pt-2">
+                <a
+                    className="options-page__text-link display-flex align-items-center"
+                    href="https://docs.sourcegraph.com/integration/browser_extension#privacy"
+                    {...LINK_PROPS}
+                >
                     <small>How do we keep your code private?</small>
+                    <OpenInNewIcon className="icon-inline mx-2" />
                 </a>
                 <p className="mb-0">
-                    <button type="button" className="btn btn-link btn-sm p-0" onClick={toggleAdvancedSettings}>
+                    <button
+                        type="button"
+                        className="options-page__text-link btn btn-link p-0"
+                        onClick={toggleAdvancedSettings}
+                    >
                         <small>{showAdvancedSettings ? 'Hide' : 'Show'} advanced settings</small>
                     </button>
                 </p>

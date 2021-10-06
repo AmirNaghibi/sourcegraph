@@ -52,4 +52,19 @@
     &__text-error {
         color: var(--danger);
     }
+
+    &__text-link {
+        color: var(--link-color);
+        font-weight: normal;
+
+        svg {
+            width: 0.9rem;
+            height: 0.9rem;
+        }
+
+        &:focus, &:active {
+            outline: none;
+            box-shadow: none;
+        }
+    }
 }
