@@ -18,8 +18,8 @@ export const CodeTextArea: React.FC<CodeTextAreaProps> = ({ value, placeholder, 
 
     return (
         // eslint-disable-next-line react/forbid-dom-props
-        <div className={styles.blocklistEditor} style={{ maxHeight: `${rows * 1.6}rem` }}>
-            <ul className={styles.blocklistEditorGutter}>
+        <div className={styles.container} style={{ maxHeight: `${rows * 1.6}rem` }}>
+            <ul className={styles.gutter}>
                 {lineNumbers.map((line, index) => (
                     <li key={index}>{index + 1}</li>
                 ))}
@@ -27,7 +27,7 @@ export const CodeTextArea: React.FC<CodeTextAreaProps> = ({ value, placeholder, 
             <textarea
                 rows={rows}
                 value={value}
-                className={styles.blocklistEditorTextarea}
+                className={styles.textarea}
                 placeholder={placeholder}
                 onChange={handleChange}
             />

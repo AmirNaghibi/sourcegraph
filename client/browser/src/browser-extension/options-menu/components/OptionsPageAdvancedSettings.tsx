@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useState } from 'react'
+import React, { useEffect, useContext, useState } from 'react'
 
 import { OptionsPageContext } from '../OptionsPage.context'
 
@@ -24,12 +24,12 @@ const Checkbox: React.FC<{ value: boolean; onChange: (value: boolean) => void }>
 export const OptionsPageAdvancedSettings: React.FC = () => {
     const { optionFlags, onChangeOptionFlag, blocklist, onBlocklistChange } = useContext(OptionsPageContext)
     const [isBlocklistEnabled, setIsBlocklistEnabled] = useState(!!blocklist?.enabled)
-    const handleTextAreaChange = useCallback(
-        (content: string) => {
-            onBlocklistChange(isBlocklistEnabled, content)
-        },
-        [isBlocklistEnabled, onBlocklistChange]
-    )
+    const [blocklistContent, setBlocklistContent] = useState(blocklist?.content ?? '')
+
+    useEffect(() => {
+        onBlocklistChange(isBlocklistEnabled, blocklistContent)
+    }, [isBlocklistEnabled, blocklistContent, onBlocklistChange])
+
     return (
         <section className="mt-3 mb-2">
             {optionFlags.map(({ label, key, value }) => (
@@ -49,8 +49,8 @@ export const OptionsPageAdvancedSettings: React.FC = () => {
                     <CodeTextArea
                         rows={4}
                         placeholder={PLACEHOLDER}
-                        value={blocklist?.content ?? ''}
-                        onChange={handleTextAreaChange}
+                        value={blocklistContent}
+                        onChange={setBlocklistContent}
                     />
                 </>
             )}

@@ -30,8 +30,6 @@ initSentry('content', codeHost?.type)
 
 setLinkComponent(AnchorLink)
 
-const IS_EXTENSION = true
-
 /**
  * Main entry point into browser extension.
  */
@@ -74,13 +72,10 @@ async function main(): Promise<void> {
             }),
             // TODO: explain why we need mergeMap instead of switchMap
             mergeMap(sourcegraphURL => {
-                if (!sourcegraphURL) {
-                    return Promise.resolve(new Subscription()) // TODO: refactor
-                }
                 console.log(`Attaching code intelligence [sourcegraphURL=${sourcegraphURL}]`)
                 return injectCodeIntelligence(
                     { sourcegraphURL, assetsURL: getAssetsURL(CLOUD_SOURCEGRAPH_URL) },
-                    IS_EXTENSION,
+                    true,
                     async function onCodeHostFound() {
                         console.log('onCodeHostFound')
 

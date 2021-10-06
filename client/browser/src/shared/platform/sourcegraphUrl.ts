@@ -45,21 +45,42 @@ export const SourcegraphURL = (() => {
     // eslint-disable-next-line rxjs/no-ignored-subscription
     observeStorageKey('sync', 'blocklist').subscribe(blocklist)
 
-    const getAllURLs = (): string[] =>
-        [CLOUD_SOURCEGRAPH_URL, selfHostedSourcegraphURL.value].filter(Boolean) as string[]
+    const getAllURLs = (rawRepoName?: string): string[] =>
+        [rawRepoName && isBlocked(rawRepoName) ? '' : CLOUD_SOURCEGRAPH_URL, selfHostedSourcegraphURL.value].filter(
+            Boolean
+        ) as string[]
 
-    const isValid = (url: string): boolean => getAllURLs().includes(url)
+    const isValid = (rawRepoName: string, url: string): boolean => {
+        return false
+        if (!getAllURLs().includes(url)) {
+            return false
+        }
+        return !isCloudSourcegraphUrl(url) || !isBlocked(rawRepoName)
+    }
+
+    const isBlocked = (rawRepoName: string): boolean => {
+        const { enabled, content = '' } = blocklist.value ?? {}
+        if (!enabled) {
+            return false
+        }
+        const repoPatterns = content.split(/\n+/)
+        const match = repoPatterns.find(pattern => new RegExp(pattern).test(rawRepoName))
+
+        console.log('isBlocked =', !!match, rawRepoName)
+        return !!match
+    }
 
     const determineSourcegraphURL = async (rawRepoName: string): Promise<string | undefined> => {
         const { cache = {} } = await storage.sync.get('cache')
+        console.log('determineSourcegraphURL', rawRepoName)
 
         const cachedSourcegraphURL = cache[rawRepoName]
-        if (cachedSourcegraphURL && isValid(cachedSourcegraphURL)) {
+        if (cachedSourcegraphURL && isValid(rawRepoName, cachedSourcegraphURL)) {
             return cachedSourcegraphURL
         }
 
         return merge(
-            ...getAllURLs().map(url =>
+            ...getAllURLs(rawRepoName).map(url =>
                 checkRepoCloned(url, rawRepoName).pipe(map(isCloned => [isCloned, url] as [boolean, string]))
             )
         )
