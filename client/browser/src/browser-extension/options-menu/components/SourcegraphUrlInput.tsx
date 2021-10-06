@@ -94,8 +94,9 @@ export const SourcegraphURLInput: React.FC<SourcegraphURLInputProps> = ({
                         {urlState.kind === 'LOADING' && <small className="text-muted d-block mt-1">Checking...</small>}
                         {urlState.kind === 'INVALID' && (
                             <small className="invalid-feedback">
-                                {urlState.reason === URL_FETCH_ERROR && 'Incorrect Sourcegraph instance address'}
-                                {urlState.reason === URL_AUTH_ERROR ? (
+                                {urlState.reason === URL_FETCH_ERROR ? (
+                                    'Incorrect Sourcegraph instance address'
+                                ) : urlState.reason === URL_AUTH_ERROR ? (
                                     <>
                                         Authentication to Sourcegraph failed.{' '}
                                         <a href={urlState.value} {...LINK_PROPS}>

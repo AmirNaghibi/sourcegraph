@@ -157,8 +157,7 @@ export const OptionsPage: React.FunctionComponent<OptionsPageProps> = ({
                         description={
                             <>
                                 Get code intel for millions of public repositories and your synced private repositories
-                                on sourcegraph.com{' '}
-                                <a href={CLOUD_SOURCEGRAPH_URL}>{CLOUD_SOURCEGRAPH_URL.replace('https://', '')}</a>
+                                on <a href={CLOUD_SOURCEGRAPH_URL}>{CLOUD_SOURCEGRAPH_URL.replace('https://', '')}</a>
                             </>
                         }
                     />
