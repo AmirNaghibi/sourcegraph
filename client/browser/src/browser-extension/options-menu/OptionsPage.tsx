@@ -225,7 +225,7 @@ function preventDefault(event: React.FormEvent<HTMLFormElement>): void {
 }
 
 const CheckIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" className={className} height="16" viewBox="0 0 16 16">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" className={className} height="16" viewBox="0 0 8 8">
         <path
             fill="#37b24d"
             d="M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z"
@@ -336,13 +336,12 @@ const SourcegraphURLInput: React.FC<SourcegraphURLInputProps> = ({
             </div>
             <div className="options-page__icon-container position-absolute d-flex justify-content-center align-items-center">
                 {!editable &&
-                    // TODO: render validation
                     (urlState.kind === 'LOADING' ? (
                         <LoadingSpinner className="options-page__icon-loading" />
                     ) : urlState.kind === 'VALID' ? (
                         <CheckIcon className="options-page__icon-check" />
                     ) : (
-                        <small>{CLOUD_SOURCEGRAPH_URL} is down</small>
+                        <small className="options-page__text-error">{CLOUD_SOURCEGRAPH_URL} is down</small>
                     ))}
             </div>
             {!editable && <InfoText>{description}</InfoText>}
